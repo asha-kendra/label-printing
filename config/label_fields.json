@@ -1,0 +1,55 @@
+{
+  "_comment": "Maps normalized label fields to the possible Zoho custom-field labels (lowercase) that hold them. Draft mapping based on photographed label samples -- confirm/edit once real Zoho data is available.",
+
+  "_category_match": {
+    "_comment": "Substrings (lowercase) matched against the item's Zoho category_name / item group name to pick a label type.",
+    "parcel": ["parcel"],
+    "certified": ["certified", "certificate"],
+    "jewellery": ["jewellery", "jewelry", "finished"],
+    "matching_pairs": ["matching pair", "pair"]
+  },
+
+  "parcel": {
+    "sku": ["sku"],
+    "shape": ["shape"],
+    "size_mm": ["size", "mm size"],
+    "colour": ["colour", "color"],
+    "clarity": ["clarity"],
+    "total_weight": ["total weight", "weight"]
+  },
+
+  "certified": {
+    "sku": ["sku", "stock no", "stock #"],
+    "growth_type": ["growth type", "natural/lab", "type"],
+    "shape": ["shape"],
+    "cut": ["cut"],
+    "measurements": ["measurements", "meas"],
+    "weight_ct": ["weight", "wt (ct)", "carat weight"],
+    "symmetry": ["symmetry", "sym"],
+    "table_pct": ["table %", "table"],
+    "colour": ["colour", "color"],
+    "clarity": ["clarity"],
+    "fluorescence": ["fluorescence", "flu"],
+    "certificate_no": ["gia certificate #", "certificate no", "cert no", "gia report number"]
+  },
+
+  "jewellery": {
+    "sku": ["sku"],
+    "metal": ["metal", "metal & karat", "karat"],
+    "stone": ["stone", "stone type"],
+    "stone_weight_ct": ["stone weight", "carat"],
+    "description": ["description", "item name"],
+    "clarity": ["clarity"],
+    "gross_weight_g": ["gross weight", "weight (g)", "weight in grams"],
+    "ring_size": ["ring size", "size"]
+  },
+
+  "matching_pairs": {
+    "sku": ["sku"],
+    "shape": ["shape"],
+    "colour": ["colour", "color"],
+    "clarity": ["clarity"],
+    "pair_weight_ct": ["pair weight", "total weight", "weight"],
+    "qty": ["qty", "quantity"]
+  }
+}
