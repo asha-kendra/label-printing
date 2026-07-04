@@ -22,7 +22,7 @@ def _draw_qr(c, data, x_mm, y_mm, size_mm=QR_SIZE_MM):
     renderPDF.draw(drawing, c, x_mm * mm, y_mm * mm)
 
 
-def _text_col(c, lines, x_mm, top_y_mm, line_gap_mm=3.4, font_size=6.5):
+def _text_col(c, lines, x_mm, top_y_mm, line_gap_mm=3.4, font_size=6.5, label_width_mm=13):
     y = top_y_mm
     for label, value in lines:
         if value in (None, ""):
@@ -30,8 +30,13 @@ def _text_col(c, lines, x_mm, top_y_mm, line_gap_mm=3.4, font_size=6.5):
         c.setFont(FONT_BOLD, font_size)
         c.drawString(x_mm * mm, y * mm, f"{label}:")
         c.setFont(FONT, font_size)
-        c.drawString((x_mm + 13) * mm, y * mm, str(value))
+        c.drawString((x_mm + label_width_mm) * mm, y * mm, str(value))
         y -= line_gap_mm
+
+
+def _text_two_col(c, left_lines, right_lines, left_x_mm, right_x_mm, top_y_mm, line_gap_mm=3.4, font_size=6.5, label_width_mm=8):
+    _text_col(c, left_lines, left_x_mm, top_y_mm, line_gap_mm, font_size, label_width_mm)
+    _text_col(c, right_lines, right_x_mm, top_y_mm, line_gap_mm, font_size, label_width_mm)
 
 
 def render_parcel(c, data, width_mm, height_mm):
@@ -68,21 +73,24 @@ def render_certified(c, data, width_mm, height_mm):
     if data.get("certificate_no"):
         c.drawString(MARGIN_MM * mm, (height_mm - 11.5) * mm, f"GIA - {data['certificate_no']}")
 
-    _text_col(
+    _text_two_col(
         c,
-        [
+        left_lines=[
             ("Shp", data.get("shape")),
             ("Cut", data.get("cut")),
             ("Meas", data.get("measurements")),
             ("Wt", f"{data['weight_ct']} ct" if data.get("weight_ct") else None),
             ("Sym", data.get("symmetry")),
+        ],
+        right_lines=[
             ("Tbl", data.get("table_pct")),
             ("Col", data.get("colour")),
             ("Clty", data.get("clarity")),
             ("Flu", data.get("fluorescence")),
         ],
-        MARGIN_MM,
-        height_mm - 15.5,
+        left_x_mm=MARGIN_MM,
+        right_x_mm=width_mm / 2 + 1,
+        top_y_mm=height_mm - 15.5,
     )
 
 

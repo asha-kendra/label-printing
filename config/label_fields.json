@@ -2,7 +2,6 @@
   "_comment": "Maps normalized label fields to the possible Zoho custom-field labels (lowercase) that hold them. Draft mapping based on photographed label samples -- confirm/edit once real Zoho data is available.",
 
   "_category_match": {
-    "_comment": "Substrings (lowercase) matched against the item's Zoho category_name / item group name to pick a label type.",
     "parcel": ["parcel"],
     "certified": ["certified", "certificate"],
     "jewellery": ["jewellery", "jewelry", "finished"],

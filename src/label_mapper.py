@@ -11,6 +11,8 @@ def detect_label_type(item):
     haystack = f"{category_name} {group_name}"
 
     for label_type, substrings in _RULES["_category_match"].items():
+        if label_type.startswith("_"):
+            continue
         if any(s in haystack for s in substrings):
             return label_type
     return None
@@ -38,5 +40,6 @@ def build_label_data(item, custom_fields, label_type=None):
             if alias in custom_fields and custom_fields[alias] not in (None, ""):
                 value = custom_fields[alias]
                 break
-        data[field] = value
+        if value is not None or field not in data:
+            data[field] = value
     return data
