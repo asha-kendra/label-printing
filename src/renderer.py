@@ -39,8 +39,32 @@ def _text_two_col(c, left_lines, right_lines, left_x_mm, right_x_mm, top_y_mm, l
     _text_col(c, right_lines, right_x_mm, top_y_mm, line_gap_mm, font_size, label_width_mm)
 
 
+def _text_width_mm(c, text, font, size):
+    return c.stringWidth(text, font, size) / mm
+
+
+def _qr_x(c, width_mm, height_mm, header_specs, band_row=None, label_width_mm=13, font_size=6.5, gap_mm=3):
+    """Pull the QR left toward the header text instead of pinning it to the
+    right edge, without letting it overlap whatever else shares its row band
+    (the header lines, and -- on templates where the first field row sits
+    high enough to be beside the QR rather than below it -- that row too).
+    """
+    widths = [_text_width_mm(c, text, font, size) for font, size, text in header_specs if text]
+    if band_row:
+        label, value = band_row
+        if value not in (None, ""):
+            widths.append(label_width_mm + _text_width_mm(c, str(value), FONT, font_size))
+    max_w = max(widths) if widths else 0
+    default_x = width_mm - QR_SIZE_MM - MARGIN_MM
+    return min(default_x, MARGIN_MM + max_w + gap_mm)
+
+
 def render_parcel(c, data, width_mm, height_mm):
-    qr_x = width_mm - QR_SIZE_MM - MARGIN_MM
+    qr_x = _qr_x(
+        c, width_mm, height_mm,
+        header_specs=[(FONT_BOLD, 8, data.get("sku")), (FONT, 6.5, "Natural")],
+        band_row=("Shp", data.get("shape")),
+    )
     _draw_qr(c, data.get("sku"), qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
     c.setFont(FONT_BOLD, 8)
@@ -63,15 +87,20 @@ def render_parcel(c, data, width_mm, height_mm):
 
 
 def render_certified(c, data, width_mm, height_mm):
-    qr_x = width_mm - QR_SIZE_MM - MARGIN_MM
+    growth_type = data.get("growth_type") or "Natural"
+    gia_line = f"GIA - {data['certificate_no']}" if data.get("certificate_no") else None
+    qr_x = _qr_x(
+        c, width_mm, height_mm,
+        header_specs=[(FONT_BOLD, 8, data.get("sku")), (FONT, 6.5, growth_type), (FONT, 6.5, gia_line)],
+    )
     _draw_qr(c, data.get("sku"), qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
     c.setFont(FONT_BOLD, 8)
     c.drawString(MARGIN_MM * mm, (height_mm - 4) * mm, data.get("sku") or "")
     c.setFont(FONT, 6.5)
-    c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, data.get("growth_type") or "Natural")
-    if data.get("certificate_no"):
-        c.drawString(MARGIN_MM * mm, (height_mm - 11.5) * mm, f"GIA - {data['certificate_no']}")
+    c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, growth_type)
+    if gia_line:
+        c.drawString(MARGIN_MM * mm, (height_mm - 11.5) * mm, gia_line)
 
     _text_two_col(
         c,
@@ -95,19 +124,23 @@ def render_certified(c, data, width_mm, height_mm):
 
 
 def render_jewellery(c, data, width_mm, height_mm):
-    qr_x = width_mm - QR_SIZE_MM - MARGIN_MM
-    _draw_qr(c, data.get("sku"), qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
-
-    c.setFont(FONT_BOLD, 8)
-    c.drawString(MARGIN_MM * mm, (height_mm - 4) * mm, data.get("sku") or "")
-    c.setFont(FONT, 6.5)
-    c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, data.get("metal") or "")
-
+    metal = data.get("metal") or ""
     stone_line = None
     if data.get("stone"):
         stone_line = data["stone"]
         if data.get("stone_weight_ct"):
             stone_line += f" - {data['stone_weight_ct']} ct"
+
+    qr_x = _qr_x(
+        c, width_mm, height_mm,
+        header_specs=[(FONT_BOLD, 8, data.get("sku")), (FONT, 6.5, metal), (FONT, 6.5, stone_line)],
+    )
+    _draw_qr(c, data.get("sku"), qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
+
+    c.setFont(FONT_BOLD, 8)
+    c.drawString(MARGIN_MM * mm, (height_mm - 4) * mm, data.get("sku") or "")
+    c.setFont(FONT, 6.5)
+    c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, metal)
     if stone_line:
         c.drawString(MARGIN_MM * mm, (height_mm - 11.5) * mm, stone_line)
 
@@ -125,7 +158,11 @@ def render_jewellery(c, data, width_mm, height_mm):
 
 
 def render_matching_pairs(c, data, width_mm, height_mm):
-    qr_x = width_mm - QR_SIZE_MM - MARGIN_MM
+    qr_x = _qr_x(
+        c, width_mm, height_mm,
+        header_specs=[(FONT_BOLD, 8, data.get("sku")), (FONT, 6.5, "Matching Pair")],
+        band_row=("Shp", data.get("shape")),
+    )
     _draw_qr(c, data.get("sku"), qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
     c.setFont(FONT_BOLD, 8)
