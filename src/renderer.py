@@ -99,30 +99,22 @@ def render_parcel(c, data, width_mm, height_mm):
 
 
 def render_certified_simple(c, data, width_mm, height_mm):
-    """The plainer certified layout: single Shp/Wt/Col/Cla column, with the
-    GIA cert # and combined measurements as two lines under the QR instead
-    of a 4-column grid. The 4-column grid doesn't fit legibly at 30x19mm,
-    so this is the standard Certified template at this label size.
-
-    Uses its own (larger) font sizes and tighter row spacing rather than
-    the shared HEADER_SIZE/BODY_SIZE constants, tuned specifically so the
-    6-row column fills the label edge-to-edge without either clipping the
-    top border or leaving a dead zone at the bottom."""
-    header_bold_size, header_size, body_size = 6.5, 5.0, 5.0
-    label_w = 6.2
+    """The plainer certified layout: Shp/Wt/Col/Cla as two side-by-side
+    columns (Shp+Col on one row, Wt+Cla on the next) rather than a single
+    stacked column, with the QR fixed at the right edge -- not pulled in
+    adaptively -- and a visible gap between the two columns."""
+    header_bold_size, header_size = 6.5, 5.0
+    body_size = 3.8
+    label_w = 4.5
     row_gap = 2.7
+    col_gap = 1.5
     top_margin, side_margin = 2.4, 0.8
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
     y0 = height_mm - top_margin
 
-    qr_x = _qr_x(
-        c, width_mm, height_mm,
-        header_specs=[(FONT_BOLD, header_bold_size, sku), (FONT, header_size, growth_type)],
-        band_rows=[("Shp", data.get("shape"))],
-        label_width_mm=label_w, font_size=body_size,
-    )
+    qr_x = width_mm - QR_SIZE_MM - MARGIN_MM
     _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
     c.setFont(FONT_BOLD, header_bold_size)
@@ -130,15 +122,23 @@ def render_certified_simple(c, data, width_mm, height_mm):
     c.setFont(FONT, header_size)
     c.drawString(side_margin * mm, (y0 - row_gap) * mm, growth_type)
 
+    col1_x = side_margin
+    col1_w = label_w + max(
+        _text_width_mm(c, data.get("shape") or "", FONT, body_size),
+        _text_width_mm(c, f"{data['weight_ct']} ct" if data.get("weight_ct") else "", FONT, body_size),
+    )
+    col2_x = col1_x + col1_w + col_gap
+
+    fields_top_y = y0 - row_gap * 2
     _text_col(
         c,
-        [
-            ("Shp", data.get("shape")),
-            ("Wt", f"{data['weight_ct']} ct" if data.get("weight_ct") else None),
-            ("Col", data.get("colour")),
-            ("Cla", data.get("clarity")),
-        ],
-        side_margin, y0 - row_gap * 2, row_gap, body_size, label_w,
+        [("Shp", data.get("shape")), ("Wt", f"{data['weight_ct']} ct" if data.get("weight_ct") else None)],
+        col1_x, fields_top_y, row_gap, body_size, label_w,
+    )
+    _text_col(
+        c,
+        [("Col", data.get("colour")), ("Cla", data.get("clarity"))],
+        col2_x, fields_top_y, row_gap, body_size, label_w,
     )
 
     gia_line = f"GIA-{data['certificate_no']}" if data.get("certificate_no") else None
@@ -149,17 +149,17 @@ def render_certified_simple(c, data, width_mm, height_mm):
         dims = f"{dims}x{depth}" if dims else str(depth)
     meas_line = f"{dims}mm" if dims else None
 
-    # GIA + measurements sit under the QR, in its own column -- not beside
-    # the field rows, and clear of them since qr_x already keeps clear of
-    # the field list's widest row.
-    qr_bottom = height_mm - QR_SIZE_MM - MARGIN_MM
-    y = qr_bottom - 1.4
+    # The two-column field layout only needs 2 row-heights instead of 4,
+    # which frees up full-width rows below for GIA + measurements -- there
+    # isn't room for them squeezed to the right of a right-fixed QR (only
+    # ~8mm of width left over, not enough for a 14-character cert number).
+    y = fields_top_y - row_gap * 2
     c.setFont(FONT, 4.2)
     if gia_line:
-        c.drawString(qr_x * mm, y * mm, gia_line)
-        y -= 2.3
+        c.drawString(side_margin * mm, y * mm, gia_line)
+        y -= row_gap
     if meas_line:
-        c.drawString(qr_x * mm, y * mm, meas_line)
+        c.drawString(side_margin * mm, y * mm, meas_line)
 
 
 def render_jewellery(c, data, width_mm, height_mm):
