@@ -140,13 +140,17 @@ def render_certified_simple(c, data, width_mm, height_mm):
         side_margin, y0 - row_gap * 2, row_gap, body_size, label_w,
     )
 
-    y = y0 - row_gap * 6
-    c.setFont(FONT, body_size)
+    # Under the QR, not in the left column -- only ~8mm of width is left
+    # there once the QR is fixed at the right edge, so this needs a much
+    # smaller font than the rest of the label to actually fit.
+    small_size = 2.7
+    y = height_mm - QR_SIZE_MM - MARGIN_MM - 1.2
+    c.setFont(FONT, small_size)
     if gia_line:
-        c.drawString(side_margin * mm, y * mm, gia_line)
-        y -= row_gap
+        c.drawString(qr_x * mm, y * mm, gia_line)
+        y -= small_size * 0.55
     if meas_line:
-        c.drawString(side_margin * mm, y * mm, meas_line)
+        c.drawString(qr_x * mm, y * mm, meas_line)
 
 
 def render_jewellery(c, data, width_mm, height_mm):
