@@ -48,14 +48,6 @@ def _text_width_mm(c, text, font, size):
     return c.stringWidth(text, font, size) / mm
 
 
-def _draw_qr_left(c, sku, height_mm, gap_mm=2):
-    """QR pinned top-left, as in the real label samples -- returns the x
-    (mm) where header/body text should start, just to its right."""
-    y = height_mm - QR_SIZE_MM - MARGIN_MM
-    _draw_qr(c, sku, MARGIN_MM, y)
-    return MARGIN_MM + QR_SIZE_MM + gap_mm
-
-
 def _qr_x(c, width_mm, height_mm, header_specs, band_row=None, label_width_mm=13, font_size=6.5, gap_mm=3):
     """Pull the QR left toward the header text instead of pinning it to the
     right edge, without letting it overlap whatever else shares its row band
@@ -76,22 +68,33 @@ def render_parcel(c, data, width_mm, height_mm):
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
 
-    text_x = _draw_qr_left(c, sku, height_mm)
-
     c.setFont(FONT_BOLD, 8)
-    c.drawString(text_x * mm, (height_mm - 4) * mm, sku)
+    c.drawString(MARGIN_MM * mm, (height_mm - 4) * mm, sku)
     c.setFont(FONT, 6.5)
-    c.drawString(text_x * mm, (height_mm - 8) * mm, growth_type)
+    c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, growth_type)
 
-    # Meas (mm range) + Total Weight mini block, top-right, beside the header
-    misc_x = width_mm - 23
+    # Meas (mm range) + Total Weight mini block, between the header and the QR
+    header_w = max(_text_width_mm(c, sku, FONT_BOLD, 8), _text_width_mm(c, growth_type, FONT, 6.5))
+    misc_x = MARGIN_MM + header_w + 4
+
+    misc_lines = []
+    if data.get("meas_mm_range"):
+        misc_lines.append(f"Meas: {data['meas_mm_range']}")
+    if data.get("total_weight") not in (None, ""):
+        misc_lines.append(f"Total Wt: {data['total_weight']}")
+
     c.setFont(FONT_BOLD, 6)
     y = height_mm - 4
-    if data.get("meas_mm_range"):
-        c.drawString(misc_x * mm, y * mm, f"Meas: {data['meas_mm_range']}")
+    misc_w = 0
+    for line in misc_lines:
+        c.drawString(misc_x * mm, y * mm, line)
+        misc_w = max(misc_w, _text_width_mm(c, line, FONT_BOLD, 6))
         y -= 4
-    if data.get("total_weight") not in (None, ""):
-        c.drawString(misc_x * mm, y * mm, f"Total Wt: {data['total_weight']}")
+
+    content_w = (misc_x + misc_w - MARGIN_MM) if misc_lines else header_w
+    default_qr_x = width_mm - QR_SIZE_MM - MARGIN_MM
+    qr_x = min(default_qr_x, MARGIN_MM + content_w + 3)
+    _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
     _text_col(
         c,
@@ -111,14 +114,18 @@ def render_certified(c, data, width_mm, height_mm):
     growth_type = data.get("growth_type") or "Natural"
     gia_line = f"GIA - {data['certificate_no']}" if data.get("certificate_no") else None
 
-    text_x = _draw_qr_left(c, sku, height_mm)
+    qr_x = _qr_x(
+        c, width_mm, height_mm,
+        header_specs=[(FONT_BOLD, 8, sku), (FONT, 6.5, growth_type), (FONT, 6.5, gia_line)],
+    )
+    _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
     c.setFont(FONT_BOLD, 8)
-    c.drawString(text_x * mm, (height_mm - 4) * mm, sku)
+    c.drawString(MARGIN_MM * mm, (height_mm - 4) * mm, sku)
     c.setFont(FONT, 6.5)
-    c.drawString(text_x * mm, (height_mm - 8) * mm, growth_type)
+    c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, growth_type)
     if gia_line:
-        c.drawString(text_x * mm, (height_mm - 11.5) * mm, gia_line)
+        c.drawString(MARGIN_MM * mm, (height_mm - 11.5) * mm, gia_line)
 
     grid_top_y = height_mm - 16
     row_gap = 3.3
@@ -172,10 +179,16 @@ def render_jewellery(c, data, width_mm, height_mm):
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
 
-    text_x = _draw_qr_left(c, sku, height_mm)
+    qr_x = _qr_x(
+        c, width_mm, height_mm,
+        header_specs=[(FONT_BOLD, 8, sku), (FONT, 6.5, growth_type)],
+    )
+    _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
     c.setFont(FONT_BOLD, 8)
-    c.drawString(text_x * mm, (height_mm - 4) * mm, sku)
+    c.drawString(MARGIN_MM * mm, (height_mm - 4) * mm, sku)
+    c.setFont(FONT, 6.5)
+    c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, growth_type)
 
     stone_line = None
     if data.get("stone"):
@@ -192,10 +205,10 @@ def render_jewellery(c, data, width_mm, height_mm):
         gross_ring_line = f"Ring Size: {data['ring_size']}"
 
     c.setFont(FONT, 6.5)
-    y = height_mm - 8
-    for line in (growth_type, stone_line, data.get("description"), data.get("metal"), gross_ring_line):
+    y = height_mm - 15
+    for line in (stone_line, data.get("description"), data.get("metal"), gross_ring_line):
         if line:
-            c.drawString(text_x * mm, y * mm, line)
+            c.drawString(MARGIN_MM * mm, y * mm, line)
             y -= 3.6
 
 
