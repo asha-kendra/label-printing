@@ -1,5 +1,5 @@
 {
-  "_comment": "Maps normalized label fields to the possible Zoho custom-field labels (lowercase) that hold them. Draft mapping based on photographed label samples -- confirm/edit once real Zoho data is available.",
+  "_comment": "Maps normalized label fields to the possible Zoho custom-field labels (lowercase) that hold them. Draft mapping based on photographed real label samples -- confirm/edit once real Zoho data is available.",
 
   "_category_match": {
     "parcel": ["parcel"],
@@ -10,10 +10,12 @@
 
   "parcel": {
     "sku": ["sku"],
+    "growth_type": ["growth type", "natural/lab", "type"],
     "shape": ["shape"],
-    "size_mm": ["size", "mm size"],
+    "size_ct_range": ["size", "carat range", "size (ct)"],
     "colour": ["colour", "color"],
     "clarity": ["clarity"],
+    "meas_mm_range": ["meas", "measurement range", "mm range", "size (mm)"],
     "total_weight": ["total weight", "weight"]
   },
 
@@ -21,24 +23,29 @@
     "sku": ["sku", "stock no", "stock #"],
     "growth_type": ["growth type", "natural/lab", "type"],
     "shape": ["shape"],
-    "cut": ["cut"],
-    "measurements": ["measurements", "meas"],
     "weight_ct": ["weight", "wt (ct)", "carat weight"],
-    "symmetry": ["symmetry", "sym"],
-    "table_pct": ["table %", "table"],
     "colour": ["colour", "color"],
     "clarity": ["clarity"],
+    "cut": ["cut"],
+    "polish": ["polish", "pol"],
+    "symmetry": ["symmetry", "sym"],
     "fluorescence": ["fluorescence", "flu"],
+    "length_mm": ["length", "meas l", "length (mm)"],
+    "width_mm": ["width", "meas w", "width (mm)"],
+    "depth_mm": ["depth", "meas d", "depth (mm)"],
+    "table_pct": ["table %", "table"],
+    "depth_pct": ["depth %", "depth percent"],
+    "ratio_pct": ["ratio", "ratio %"],
     "certificate_no": ["gia certificate #", "certificate no", "cert no", "gia report number"]
   },
 
   "jewellery": {
     "sku": ["sku"],
+    "growth_type": ["growth type", "natural/lab", "type"],
     "metal": ["metal", "metal & karat", "karat"],
     "stone": ["stone", "stone type"],
     "stone_weight_ct": ["stone weight", "carat"],
     "description": ["description", "item name"],
-    "clarity": ["clarity"],
     "gross_weight_g": ["gross weight", "weight (g)", "weight in grams"],
     "ring_size": ["ring size", "size"]
   },
