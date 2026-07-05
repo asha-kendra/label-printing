@@ -12,6 +12,11 @@ FONT = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
 
 
+def _draw_border(c, width_mm, height_mm, inset_mm=0.8):
+    c.setLineWidth(0.75)
+    c.rect(inset_mm * mm, inset_mm * mm, (width_mm - 2 * inset_mm) * mm, (height_mm - 2 * inset_mm) * mm, stroke=1, fill=0)
+
+
 def _draw_qr(c, data, x_mm, y_mm, size_mm=QR_SIZE_MM):
     widget = QrCodeWidget(data or "")
     bounds = widget.getBounds()
@@ -60,30 +65,38 @@ def _qr_x(c, width_mm, height_mm, header_specs, band_row=None, label_width_mm=13
 
 
 def render_parcel(c, data, width_mm, height_mm):
+    name = data.get("name") or data.get("sku") or ""
+    sku = data.get("sku") or ""
+
     qr_x = _qr_x(
         c, width_mm, height_mm,
-        header_specs=[(FONT_BOLD, 8, data.get("sku")), (FONT, 6.5, "Natural")],
+        header_specs=[(FONT_BOLD, 8, name), (FONT, 6.5, sku)],
         band_row=("Shp", data.get("shape")),
     )
-    _draw_qr(c, data.get("sku"), qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
+    _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
     c.setFont(FONT_BOLD, 8)
-    c.drawString(MARGIN_MM * mm, (height_mm - 4) * mm, data.get("sku") or "")
+    c.drawString(MARGIN_MM * mm, (height_mm - 4) * mm, name)
     c.setFont(FONT, 6.5)
-    c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, "Natural")
+    c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, sku)
 
     _text_col(
         c,
         [
             ("Shp", data.get("shape")),
             ("Size", data.get("size_mm")),
-            ("Clr", data.get("colour")),
-            ("Clty", data.get("clarity")),
-            ("Wt", data.get("total_weight")),
+            ("Col", data.get("colour")),
+            ("Cla", data.get("clarity")),
         ],
         MARGIN_MM,
         height_mm - 12,
     )
+
+    if data.get("total_weight") not in (None, ""):
+        tw_x = width_mm / 2 + 4
+        c.setFont(FONT_BOLD, 7)
+        c.drawString(tw_x * mm, (height_mm - 19) * mm, "Total Weight:")
+        c.drawString(tw_x * mm, (height_mm - 23) * mm, str(data["total_weight"]))
 
 
 def render_certified(c, data, width_mm, height_mm):
@@ -201,6 +214,7 @@ def render_label_pdf(data, output_path, width_mm=None, height_mm=None):
         raise ValueError(f"No renderer for label type {data['label_type']!r}")
 
     c = canvas.Canvas(output_path, pagesize=(width_mm * mm, height_mm * mm))
+    _draw_border(c, width_mm, height_mm)
     renderer(c, data, width_mm, height_mm)
     c.showPage()
     c.save()
