@@ -213,6 +213,53 @@ def render_certified(c, data, width_mm, height_mm):
         y -= row_gap
 
 
+def render_certified_simple(c, data, width_mm, height_mm):
+    """The plainer certified layout: single Shp/Wt/Col/Cla column, with the
+    GIA cert # and combined measurements as two side lines instead of a
+    4-column grid. Matches the simpler real label sample exactly."""
+    sku = data.get("sku") or ""
+    growth_type = data.get("growth_type") or "Natural"
+
+    qr_x = _qr_x(
+        c, width_mm, height_mm,
+        header_specs=[(FONT_BOLD, 8, sku), (FONT, 6.5, growth_type)],
+    )
+    _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
+
+    c.setFont(FONT_BOLD, 8)
+    c.drawString(MARGIN_MM * mm, (height_mm - 4) * mm, sku)
+    c.setFont(FONT, 6.5)
+    c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, growth_type)
+
+    top_y = height_mm - 16
+    row_gap = 3.4
+    _text_col(
+        c,
+        [
+            ("Shp", data.get("shape")),
+            ("Wt", f"{data['weight_ct']} ct" if data.get("weight_ct") else None),
+            ("Col", data.get("colour")),
+            ("Cla", data.get("clarity")),
+        ],
+        MARGIN_MM, top_y, row_gap,
+    )
+
+    gia_line = f"GIA-{data['certificate_no']}" if data.get("certificate_no") else None
+
+    length, width, depth = data.get("length_mm"), data.get("width_mm"), data.get("depth_mm")
+    dims = "-".join(str(v) for v in (length, width) if v not in (None, ""))
+    if depth not in (None, ""):
+        dims = f"{dims}x{depth}" if dims else str(depth)
+    meas_line = f"{dims}mm" if dims else None
+
+    side_x = width_mm / 2 + 3
+    c.setFont(FONT, 6.5)
+    if gia_line:
+        c.drawString(side_x * mm, (top_y - row_gap * 2) * mm, gia_line)
+    if meas_line:
+        c.drawString(side_x * mm, (top_y - row_gap * 3) * mm, meas_line)
+
+
 def render_jewellery(c, data, width_mm, height_mm):
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
