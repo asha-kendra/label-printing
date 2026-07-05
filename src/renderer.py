@@ -48,6 +48,33 @@ def _text_width_mm(c, text, font, size):
     return c.stringWidth(text, font, size) / mm
 
 
+def _draw_double_arrow(c, x_mm, y_bottom_mm, h_mm=3.2, w_mm=1.3):
+    """One vertical range arrow: a line with a triangle at each end."""
+    x = x_mm * mm
+    y0 = y_bottom_mm * mm
+    y1 = y0 + h_mm * mm
+    half_w = (w_mm / 2) * mm
+    tri_h = 0.9 * mm
+    c.setLineWidth(0.4)
+    c.line(x, y0, x, y1)
+    for y_tip, y_base, going_up in ((y1, y1 - tri_h, True), (y0, y0 + tri_h, False)):
+        p = c.beginPath()
+        p.moveTo(x - half_w, y_base)
+        p.lineTo(x + half_w, y_base)
+        p.lineTo(x, y_tip)
+        p.close()
+        c.drawPath(p, fill=1, stroke=0)
+
+
+def _draw_range_icon(c, x_mm, y_bottom_mm, spacing_mm=2.2):
+    """The '↕↕' range-indicator icon from the real label samples,
+    drawn as vector shapes since standard PDF fonts lack the glyph. Returns
+    the x (mm) just past the icon's right edge."""
+    _draw_double_arrow(c, x_mm, y_bottom_mm)
+    _draw_double_arrow(c, x_mm + spacing_mm, y_bottom_mm)
+    return x_mm + spacing_mm + 1.5
+
+
 def _qr_x(c, width_mm, height_mm, header_specs, band_row=None, label_width_mm=13, font_size=6.5, gap_mm=3):
     """Pull the QR left toward the header text instead of pinning it to the
     right edge, without letting it overlap whatever else shares its row band
@@ -75,13 +102,16 @@ def render_parcel(c, data, width_mm, height_mm):
 
     # Meas (mm range) + Total Weight mini block, between the header and the QR
     header_w = max(_text_width_mm(c, sku, FONT_BOLD, 8), _text_width_mm(c, growth_type, FONT, 6.5))
-    misc_x = MARGIN_MM + header_w + 4
 
     misc_lines = []
     if data.get("meas_mm_range"):
         misc_lines.append(f"Meas: {data['meas_mm_range']}")
     if data.get("total_weight") not in (None, ""):
         misc_lines.append(f"Total Wt: {data['total_weight']}")
+
+    misc_x = MARGIN_MM + header_w + 4
+    if misc_lines:
+        misc_x = _draw_range_icon(c, misc_x, height_mm - 8) + 1
 
     c.setFont(FONT_BOLD, 6)
     y = height_mm - 4
@@ -114,10 +144,18 @@ def render_certified(c, data, width_mm, height_mm):
     growth_type = data.get("growth_type") or "Natural"
     gia_line = f"GIA - {data['certificate_no']}" if data.get("certificate_no") else None
 
-    qr_x = _qr_x(
-        c, width_mm, height_mm,
-        header_specs=[(FONT_BOLD, 8, sku), (FONT, 6.5, growth_type), (FONT, 6.5, gia_line)],
+    header_w = max(
+        _text_width_mm(c, sku, FONT_BOLD, 8),
+        _text_width_mm(c, growth_type, FONT, 6.5),
+        _text_width_mm(c, gia_line, FONT, 6.5) if gia_line else 0,
     )
+    has_meas = any(data.get(k) not in (None, "") for k in ("length_mm", "width_mm", "depth_mm"))
+    icon_right = MARGIN_MM + header_w + 3
+    if has_meas:
+        icon_right = _draw_range_icon(c, icon_right, height_mm - 9)
+
+    default_qr_x = width_mm - QR_SIZE_MM - MARGIN_MM
+    qr_x = min(default_qr_x, icon_right + 3)
     _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
     c.setFont(FONT_BOLD, 8)
