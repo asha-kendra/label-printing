@@ -220,9 +220,13 @@ def render_certified_simple(c, data, width_mm, height_mm):
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
 
+    top_y = height_mm - 16
+    row_gap = 3.4
+
     qr_x = _qr_x(
         c, width_mm, height_mm,
         header_specs=[(FONT_BOLD, 8, sku), (FONT, 6.5, growth_type)],
+        band_row=("Shp", data.get("shape")),
     )
     _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
@@ -231,8 +235,6 @@ def render_certified_simple(c, data, width_mm, height_mm):
     c.setFont(FONT, 6.5)
     c.drawString(MARGIN_MM * mm, (height_mm - 8) * mm, growth_type)
 
-    top_y = height_mm - 16
-    row_gap = 3.4
     _text_col(
         c,
         [
@@ -252,12 +254,16 @@ def render_certified_simple(c, data, width_mm, height_mm):
         dims = f"{dims}x{depth}" if dims else str(depth)
     meas_line = f"{dims}mm" if dims else None
 
-    side_x = width_mm / 2 + 3
+    # GIA + measurements sit under the QR, in its own column -- not beside
+    # the field rows, and clear of them since qr_x already keeps clear of
+    # the field list's widest row.
+    y = height_mm - QR_SIZE_MM - MARGIN_MM - 3
     c.setFont(FONT, 6.5)
     if gia_line:
-        c.drawString(side_x * mm, (top_y - row_gap * 2) * mm, gia_line)
+        c.drawString(qr_x * mm, y * mm, gia_line)
+        y -= row_gap
     if meas_line:
-        c.drawString(side_x * mm, (top_y - row_gap * 3) * mm, meas_line)
+        c.drawString(qr_x * mm, y * mm, meas_line)
 
 
 def render_jewellery(c, data, width_mm, height_mm):
