@@ -102,23 +102,33 @@ def render_certified_simple(c, data, width_mm, height_mm):
     """The plainer certified layout: single Shp/Wt/Col/Cla column, with the
     GIA cert # and combined measurements as two lines under the QR instead
     of a 4-column grid. The 4-column grid doesn't fit legibly at 30x19mm,
-    so this is the standard Certified template at this label size."""
+    so this is the standard Certified template at this label size.
+
+    Uses its own (larger) font sizes and tighter row spacing rather than
+    the shared HEADER_SIZE/BODY_SIZE constants, tuned specifically so the
+    6-row column fills the label edge-to-edge without either clipping the
+    top border or leaving a dead zone at the bottom."""
+    header_bold_size, header_size, body_size = 6.5, 5.0, 5.0
+    label_w = 6.2
+    row_gap = 2.7
+    top_margin, side_margin = 2.4, 0.8
+
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
-
-    top_y = height_mm - 6.5
+    y0 = height_mm - top_margin
 
     qr_x = _qr_x(
         c, width_mm, height_mm,
-        header_specs=[(FONT_BOLD, HEADER_BOLD_SIZE, sku), (FONT, HEADER_SIZE, growth_type)],
+        header_specs=[(FONT_BOLD, header_bold_size, sku), (FONT, header_size, growth_type)],
         band_rows=[("Shp", data.get("shape"))],
+        label_width_mm=label_w, font_size=body_size,
     )
     _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
-    c.setFont(FONT_BOLD, HEADER_BOLD_SIZE)
-    c.drawString(MARGIN_MM * mm, (height_mm - 2.3) * mm, sku)
-    c.setFont(FONT, HEADER_SIZE)
-    c.drawString(MARGIN_MM * mm, (height_mm - 4.3) * mm, growth_type)
+    c.setFont(FONT_BOLD, header_bold_size)
+    c.drawString(side_margin * mm, y0 * mm, sku)
+    c.setFont(FONT, header_size)
+    c.drawString(side_margin * mm, (y0 - row_gap) * mm, growth_type)
 
     _text_col(
         c,
@@ -128,7 +138,7 @@ def render_certified_simple(c, data, width_mm, height_mm):
             ("Col", data.get("colour")),
             ("Cla", data.get("clarity")),
         ],
-        MARGIN_MM, top_y,
+        side_margin, y0 - row_gap * 2, row_gap, body_size, label_w,
     )
 
     gia_line = f"GIA-{data['certificate_no']}" if data.get("certificate_no") else None
@@ -142,11 +152,12 @@ def render_certified_simple(c, data, width_mm, height_mm):
     # GIA + measurements sit under the QR, in its own column -- not beside
     # the field rows, and clear of them since qr_x already keeps clear of
     # the field list's widest row.
-    y = height_mm - QR_SIZE_MM - MARGIN_MM - 1.4
-    c.setFont(FONT, 3.6)
+    qr_bottom = height_mm - QR_SIZE_MM - MARGIN_MM
+    y = qr_bottom - 1.4
+    c.setFont(FONT, 4.2)
     if gia_line:
         c.drawString(qr_x * mm, y * mm, gia_line)
-        y -= 2.0
+        y -= 2.3
     if meas_line:
         c.drawString(qr_x * mm, y * mm, meas_line)
 
