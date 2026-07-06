@@ -44,13 +44,15 @@ def render_certified_ezpl(data):
 def render_jewellery_ezpl(data):
     """Fill in templates/jewellery.ezpl -- translated from a ZPL reference
     file (^XA/^FO/^BQN/^XZ) into EZPL, since the printer's PPD shows it
-    natively speaks EZPL (Rastertoezpl), not ZPL. Same three fields, same
-    exact coordinates as the reference (20,20 / 20,50 / 20,80 for text,
-    200,20 for the QR with model/magnification 2,4) -- not rescaled, since
-    unlike certified.ezpl there's no confirmed original label size to
-    scale from here. Note: at ^W240 (30mm width), a QR positioned at
-    x=200 has only 40 dots (5mm) of room before the right edge -- worth
-    checking on a real print that it isn't clipped."""
+    natively speaks EZPL (Rastertoezpl), not ZPL.
+
+    The reference file's literal coordinates (20,20 / 20,50 / 20,80 text,
+    200,20 QR) put the QR's right edge at 240 dots on a 240-dot-wide
+    (30mm) canvas -- exactly at the edge, clipped in practice. Positions
+    now match the Certified label's style instead: same font sizes,
+    QR top-aligned with the item name and pinned within the right padding
+    (BQ at x=164 instead of 200, leaving the QR's right edge at ~228 of
+    240 dots)."""
     substitutions = {
         "<PRODUCT_NAME>": data.get("description") or data.get("name") or "",
         "<SKU>": data.get("sku") or "",
