@@ -122,19 +122,21 @@ def render_certified_simple(c, data, width_mm, height_mm):
     label/value column, with GIA cert # + combined measurements under the
     QR -- all at one uniform font size.
 
-    The QR is bigger here (12mm, not 8mm) specifically so GIA/measurements
-    fit under it at that same uniform size: it's anchored to the right
-    edge, so growing it pushes its *left* edge further left, which widens
-    -- not narrows -- the column available underneath it. Checked
-    numerically first: at 12mm the widest measurement string has ~1mm of
-    slack in that column.
+    The GIA/measurements column width is pinned to `text_col_w` (12mm),
+    *not* derived from the QR's own size: that's how wide the widest
+    realistic measurement string ("10.03-9.32x6.30mm") needs at this
+    uniform font size, checked numerically (~1mm slack). The QR itself is
+    drawn smaller and stays right-anchored, so shrinking it just opens up
+    blank margin above-left of the QR -- it doesn't take width away from
+    the text column below, which would otherwise overflow the label edge.
     """
     font_size = 4.0
     label_w = 7
     tight_gap = 2.6
     padding = 1.5  # left, right, bottom
     top_padding = 2.5  # extra breathing room above the header/QR specifically
-    qr_size = 12  # bigger than QR_SIZE_MM used elsewhere -- see docstring
+    qr_size = 9  # visual QR box size, right-anchored
+    text_col_w = 12  # GIA/measurements column width -- independent of qr_size, see docstring
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
@@ -146,6 +148,7 @@ def render_certified_simple(c, data, width_mm, height_mm):
     y0 = top_line_y - _ascent_mm(FONT, font_size)
     qr_x = width_mm - padding - qr_size
     qr_y = top_line_y - qr_size
+    text_x = width_mm - padding - text_col_w
     _draw_qr(c, sku, qr_x, qr_y, size_mm=qr_size)
 
     field_rows = [
@@ -159,9 +162,9 @@ def render_certified_simple(c, data, width_mm, height_mm):
         (_text_width_mm(c, str(v), FONT, font_size) for v in field_values), default=0)
     header_w = padding + max(_text_width_mm(c, sku, FONT_BOLD, font_size),
                               _text_width_mm(c, growth_type, FONT, font_size))
-    assert max(left_col_w, header_w) < qr_x, (
+    assert max(left_col_w, header_w) < text_x, (
         f"left content ({max(left_col_w, header_w):.1f}mm) collides with the "
-        f"right-fixed QR ({qr_x:.1f}mm) -- shrink font_size/label_w or widen the label"
+        f"GIA/measurements column ({text_x:.1f}mm) -- shrink font_size/label_w or widen the label"
     )
 
     # Header (SKU, growth) and fields (Shp/Wt/Col/Cla) each read as a tight
@@ -197,9 +200,9 @@ def render_certified_simple(c, data, width_mm, height_mm):
     gia_y = qr_y - gia_top_clearance - _ascent_mm(FONT, font_size)
     meas_y = padding
     if gia_line:
-        c.drawString(qr_x * mm, gia_y * mm, gia_line)
+        c.drawString(text_x * mm, gia_y * mm, gia_line)
     if meas_line:
-        c.drawString(qr_x * mm, meas_y * mm, meas_line)
+        c.drawString(text_x * mm, meas_y * mm, meas_line)
 
 
 def render_jewellery(c, data, width_mm, height_mm):
