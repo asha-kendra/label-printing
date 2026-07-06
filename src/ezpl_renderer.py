@@ -42,24 +42,34 @@ def render_certified_ezpl(data):
 
 
 def render_jewellery_ezpl(data):
-    """Fill in templates/jewellery.ezpl -- translated from a ZPL reference
-    file (^XA/^FO/^BQN/^XZ) into EZPL, since the printer's PPD shows it
-    natively speaks EZPL (Rastertoezpl), not ZPL.
+    """Fill in templates/jewellery.ezpl -- the full 6-line jewellery field
+    set (matching the real label photo: SKU, growth type, stone+carat,
+    description, metal, gross weight+ring size), not the 3-field
+    Product-Name/SKU/Weight subset from the ZPL reference file, which was
+    only a simplified example. Same field-combining logic as the PDF
+    renderer's render_jewellery (stone+carat on one line, weight+ring
+    size on one line)."""
+    stone_line = ""
+    if data.get("stone"):
+        stone_line = data["stone"]
+        if data.get("stone_weight_ct"):
+            stone_line += f" - {data['stone_weight_ct']} ct"
 
-    The reference file's literal coordinates (20,20 / 20,50 / 20,80 text,
-    200,20 QR) put the QR's right edge at 240 dots on a 240-dot-wide
-    (30mm) canvas -- exactly at the edge, clipped in practice. Positions
-    now match the Certified label's style instead: same font sizes, QR
-    top-aligned with the item name and pinned within the right padding
-    (BQ at x=164 instead of 200), SKU/WEIGHT as separate label+value
-    columns (matching Certified's "Shp." / "Cushion" pattern) rather than
-    baked-in "SKU: x" strings, and a moderate (not stretched-to-fill) gap
-    between the three lines since there's only half as much content as
-    Certified's 6 lines."""
+    weight_ring_line = ""
+    if data.get("gross_weight_g"):
+        weight_ring_line = f"{data['gross_weight_g']} gms"
+        if data.get("ring_size"):
+            weight_ring_line += f" | Ring Size: {data['ring_size']}"
+    elif data.get("ring_size"):
+        weight_ring_line = f"Ring Size: {data['ring_size']}"
+
     substitutions = {
-        "<PRODUCT_NAME>": data.get("description") or data.get("name") or "",
         "<SKU>": data.get("sku") or "",
-        "<WEIGHT>": data.get("gross_weight_g") or "",
+        "<GROWTH_TYPE>": data.get("growth_type") or "Natural",
+        "<STONE_LINE>": stone_line,
+        "<DESCRIPTION>": data.get("description") or "",
+        "<METAL>": data.get("metal") or "",
+        "<WEIGHT_RING_LINE>": weight_ring_line,
         "<QR_DATA>": data.get("sku") or "",
     }
 
