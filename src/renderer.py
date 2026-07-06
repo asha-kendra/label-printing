@@ -2,9 +2,14 @@ from reportlab.graphics import renderPDF
 from reportlab.graphics.barcode.qr import QrCodeWidget
 from reportlab.graphics.shapes import Drawing
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen import canvas
 
 from . import config
+
+
+def _ascent_mm(font, size):
+    return pdfmetrics.getAscent(font) * size / 1000 / mm
 
 QR_SIZE_MM = 8
 MARGIN_MM = 0.8
@@ -121,10 +126,18 @@ def render_certified_simple(c, data, width_mm, height_mm):
     header_bold_size = 6.0
     label_w = 7
     small_gap = 2.6
-    top_margin, bottom_margin, side_margin = 2.3, 1.4, 0.8
+    padding = 1.5  # same value on all four sides -- top, bottom, left, right
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
+
+    # QR's top and the item name's top sit on the same line: both start at
+    # `padding` from the top edge. Text is positioned by baseline, so back
+    # out the baseline from the font's real ascent instead of guessing.
+    top_line_y = height_mm - padding
+    y0 = top_line_y - _ascent_mm(FONT_BOLD, header_bold_size)
+    qr_y = top_line_y - QR_SIZE_MM
+    _draw_qr(c, sku, width_mm - padding - QR_SIZE_MM, qr_y)
 
     field_rows = [
         ("Shp.", data.get("shape")),
@@ -133,29 +146,32 @@ def render_certified_simple(c, data, width_mm, height_mm):
         ("Cla", data.get("clarity")),
     ]
     field_values = [v for _, v in field_rows if v]
-    left_col_w = side_margin + label_w + max(
+    left_col_w = padding + label_w + max(
         (_text_width_mm(c, str(v), FONT, font_size) for v in field_values), default=0)
-    header_w = side_margin + max(_text_width_mm(c, sku, FONT_BOLD, header_bold_size),
-                                  _text_width_mm(c, growth_type, FONT, font_size))
-
-    qr_x = max(left_col_w, header_w) + 2
-    _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
+    header_w = padding + max(_text_width_mm(c, sku, FONT_BOLD, header_bold_size),
+                              _text_width_mm(c, growth_type, FONT, font_size))
+    qr_x = width_mm - padding - QR_SIZE_MM
+    assert max(left_col_w, header_w) < qr_x, (
+        f"left content ({max(left_col_w, header_w):.1f}mm) collides with the "
+        f"right-fixed QR ({qr_x:.1f}mm) -- shrink font_size/label_w or widen the label"
+    )
 
     # 6 rows, 5 gaps: 1 within the header group + 3 within the field group
     # (all `small_gap`) + 1 between the two groups (soaks up the rest of
-    # the available height).
-    between_gap = height_mm - top_margin - bottom_margin - small_gap * 4
+    # the available height, keeping top and bottom padding equal). y0 is
+    # already `ascent` below the top padding line, so that has to come out
+    # of the budget too or the last row overshoots the bottom padding.
+    between_gap = height_mm - padding * 2 - _ascent_mm(FONT_BOLD, header_bold_size) - small_gap * 4
 
-    y0 = height_mm - top_margin
     y_growth = y0 - small_gap
     y_fields_top = y_growth - between_gap
 
     c.setFont(FONT_BOLD, header_bold_size)
-    c.drawString(side_margin * mm, y0 * mm, sku)
+    c.drawString(padding * mm, y0 * mm, sku)
     c.setFont(FONT, font_size)
-    c.drawString(side_margin * mm, y_growth * mm, growth_type)
+    c.drawString(padding * mm, y_growth * mm, growth_type)
 
-    _text_col(c, field_rows, side_margin, y_fields_top, small_gap, font_size, label_w,
+    _text_col(c, field_rows, padding, y_fields_top, small_gap, font_size, label_w,
               bold_label=False, label_suffix="")
 
     gia_line = f"GIA-{data['certificate_no']}" if data.get("certificate_no") else None
@@ -167,9 +183,13 @@ def render_certified_simple(c, data, width_mm, height_mm):
     meas_line = f"{dims}mm" if dims else None
 
     # GIA + measurements aligned with the QR's x -- "in the same line" --
-    # directly below it.
-    y = height_mm - QR_SIZE_MM - MARGIN_MM - 1.2
-    c.setFont(FONT, font_size)
+    # directly below it. Right-fixed QR + right-side padding leaves only
+    # ~8mm of width there, not enough for these two strings at font_size
+    # (which fits fine on the left where there's much more room), so they
+    # get their own smaller size.
+    gia_font_size = 2.6
+    y = qr_y - 1.4
+    c.setFont(FONT, gia_font_size)
     if gia_line:
         c.drawString(qr_x * mm, y * mm, gia_line)
         y -= small_gap
