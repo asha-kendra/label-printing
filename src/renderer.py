@@ -99,15 +99,17 @@ def render_parcel(c, data, width_mm, height_mm):
 
 
 def render_certified_simple(c, data, width_mm, height_mm):
-    """The plainer certified layout: single Shp/Wt/Col/Cla column (plus GIA
-    cert # and combined measurements as two more rows in that same column),
-    with the QR fixed at the right edge -- not pulled in adaptively -- and
-    a clear gap between the text column and the QR."""
-    header_bold_size, header_size = 6.5, 5.0
-    body_size = 4.0
-    label_w = 5.0
-    row_gap = 2.15
-    top_margin, side_margin = 2.4, 0.8
+    """The plainer certified layout: single Shp/Wt/Col/Cla column, GIA cert #
+    + combined measurements under the QR, QR fixed at the right edge.
+
+    One font size for every line on the label (2.8pt) -- the max size that
+    still lets "GIA-2478433766" and the combined measurement string fit in
+    the ~8mm of width left under a right-fixed QR, which is the tightest
+    constraint on the label."""
+    font_size = 2.6
+    label_w = 2.6
+    row_gap = 1.7
+    top_margin, side_margin = 1.6, 0.8
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
@@ -116,9 +118,9 @@ def render_certified_simple(c, data, width_mm, height_mm):
     qr_x = width_mm - QR_SIZE_MM - MARGIN_MM
     _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
-    c.setFont(FONT_BOLD, header_bold_size)
+    c.setFont(FONT_BOLD, font_size)
     c.drawString(side_margin * mm, y0 * mm, sku)
-    c.setFont(FONT, header_size)
+    c.setFont(FONT, font_size)
     c.drawString(side_margin * mm, (y0 - row_gap) * mm, growth_type)
 
     gia_line = f"GIA-{data['certificate_no']}" if data.get("certificate_no") else None
@@ -137,18 +139,16 @@ def render_certified_simple(c, data, width_mm, height_mm):
             ("Col", data.get("colour")),
             ("Cla", data.get("clarity")),
         ],
-        side_margin, y0 - row_gap * 2, row_gap, body_size, label_w,
+        side_margin, y0 - row_gap * 2, row_gap, font_size, label_w,
     )
 
     # Under the QR, not in the left column -- only ~8mm of width is left
-    # there once the QR is fixed at the right edge, so this needs a much
-    # smaller font than the rest of the label to actually fit.
-    small_size = 2.7
+    # there once the QR is fixed at the right edge.
     y = height_mm - QR_SIZE_MM - MARGIN_MM - 1.2
-    c.setFont(FONT, small_size)
+    c.setFont(FONT, font_size)
     if gia_line:
         c.drawString(qr_x * mm, y * mm, gia_line)
-        y -= small_size * 0.55
+        y -= row_gap
     if meas_line:
         c.drawString(qr_x * mm, y * mm, meas_line)
 
