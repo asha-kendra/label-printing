@@ -68,7 +68,9 @@ supported: `parcel`, `certified`, `jewellery`, `matching_pairs`.
 3. **Category-match substrings** (`parcel`, `certified`, `jewellery`,
    `matching pair`) assume those words appear in the item's category or item
    group name in Zoho -- confirm and adjust in the same config file.
-4. **EZPL units are unconfirmed.** `templates/certified.ezpl` is the real
-   template exported from the existing system, used as-is without knowing
-   whether its `^Q152,24`/`^W280` units line up with 300dpi or another
-   resolution -- test a real print before trusting the physical size.
+4. **EZPL units confirmed at 8 dots/mm (203dpi).** The originally-exported
+   template used `^W280`/`^Q152` for a 35x19mm label (280/35 = 152/19 = 8
+   dots/mm exactly). Since the real label is 30x19mm, `templates/certified.ezpl`
+   now uses `^W240` (30*8) with every x-coordinate scaled by 240/280 from
+   the original -- still worth a real test print to confirm scanning/
+   legibility at the new positions.
