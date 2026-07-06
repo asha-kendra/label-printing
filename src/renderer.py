@@ -132,16 +132,17 @@ def render_certified_simple(c, data, width_mm, height_mm):
     font_size = 4.0
     label_w = 7
     tight_gap = 2.6
-    padding = 1.5  # same value on all four sides -- top, bottom, left, right
+    padding = 1.5  # left, right, bottom
+    top_padding = 2.5  # extra breathing room above the header/QR specifically
     qr_size = 12  # bigger than QR_SIZE_MM used elsewhere -- see docstring
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
 
     # QR's top and the item name's top sit on the same line: both start at
-    # `padding` from the top edge. Text is positioned by baseline, so back
-    # out the baseline from the font's real ascent instead of guessing.
-    top_line_y = height_mm - padding
+    # `top_padding` from the top edge. Text is positioned by baseline, so
+    # back out the baseline from the font's real ascent instead of guessing.
+    top_line_y = height_mm - top_padding
     y0 = top_line_y - _ascent_mm(FONT, font_size)
     qr_x = width_mm - padding - qr_size
     qr_y = top_line_y - qr_size
@@ -167,7 +168,7 @@ def render_certified_simple(c, data, width_mm, height_mm):
     # group; the gap *between* the groups is enlarged instead, soaking up
     # the rest of the available height so Cla still lands near the bottom
     # padding line.
-    between_gap = height_mm - padding * 2 - _ascent_mm(FONT, font_size) - tight_gap * 4
+    between_gap = height_mm - top_padding - padding - _ascent_mm(FONT, font_size) - tight_gap * 4
     y_growth = y0 - tight_gap
     y_fields_top = y_growth - between_gap
 
@@ -187,12 +188,18 @@ def render_certified_simple(c, data, width_mm, height_mm):
         dims = f"{dims}×{depth}" if dims else str(depth)
     meas_line = f"{dims}mm" if dims else None
 
-    y = qr_y - 1.4
+    # Position by real clearance from the QR's bottom edge to the text's
+    # cap-height top (not baseline -- baseline-only offsets undercount by
+    # a whole ascent and can let the glyph overlap the QR), then size the
+    # GIA-to-meas gap so meas_line's baseline lands exactly on the bottom
+    # padding line regardless of how tall the QR ends up being.
+    gia_top_clearance = 0.39
+    gia_y = qr_y - gia_top_clearance - _ascent_mm(FONT, font_size)
+    meas_y = padding
     if gia_line:
-        c.drawString(qr_x * mm, y * mm, gia_line)
-        y -= tight_gap
+        c.drawString(qr_x * mm, gia_y * mm, gia_line)
     if meas_line:
-        c.drawString(qr_x * mm, y * mm, meas_line)
+        c.drawString(qr_x * mm, meas_y * mm, meas_line)
 
 
 def render_jewellery(c, data, width_mm, height_mm):
