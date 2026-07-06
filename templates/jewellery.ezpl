@@ -1,0 +1,22 @@
+^Q152,24
+^W240
+^H10
+^P1
+^S2
+^AT
+^AD
+^C1
+^R0
+~Q+0
+^O0
+^D0
+^E12
+
+AA,7,8,1,1,0,0E,<PRODUCT_NAME>
+AA,7,40,1,1,0,0E,SKU: <SKU>
+AA,7,72,1,1,0,0E,WT: <WEIGHT>g
+
+BQ,176,5,2,5,M,0
+MA,<QR_DATA>
+
+E

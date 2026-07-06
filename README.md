@@ -43,9 +43,9 @@ Replace `<device-uri>` with the printer's USB/network CUPS device URI
 python -m src.cli <item_id>                      # fetch, render, print
 python -m src.cli <item_id> --no-print --out l.pdf   # render only, inspect first
 python -m src.cli <item_id> --label-type certified   # override auto-detected type
-python -m src.cli <item_id> --ezpl               # certified only: use the real EZPL
-                                                  # template (templates/certified.ezpl)
-                                                  # and send it raw, instead of the PDF path
+python -m src.cli <item_id> --ezpl               # certified/jewellery only: use the real EZPL
+                                                  # templates (templates/*.ezpl) and send raw,
+                                                  # instead of the PDF path
 ```
 
 ## Label types

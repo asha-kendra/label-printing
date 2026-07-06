@@ -39,3 +39,21 @@ def render_certified_ezpl(data):
     for placeholder, value in substitutions.items():
         ezpl = ezpl.replace(placeholder, str(value))
     return ezpl
+
+
+def render_jewellery_ezpl(data):
+    """Fill in templates/jewellery.ezpl -- translated from a ZPL reference
+    file (^XA/^FO/^BQN/^XZ) into EZPL, since the printer's PPD shows it
+    natively speaks EZPL (Rastertoezpl), not ZPL. Same three fields as the
+    reference: product name, SKU, weight -- plus a QR code."""
+    substitutions = {
+        "<PRODUCT_NAME>": data.get("description") or data.get("name") or "",
+        "<SKU>": data.get("sku") or "",
+        "<WEIGHT>": data.get("gross_weight_g") or "",
+        "<QR_DATA>": data.get("sku") or "",
+    }
+
+    ezpl = _load_template("jewellery.ezpl")
+    for placeholder, value in substitutions.items():
+        ezpl = ezpl.replace(placeholder, str(value))
+    return ezpl
