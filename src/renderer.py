@@ -110,23 +110,24 @@ def render_parcel(c, data, width_mm, height_mm):
 
 
 def render_certified_simple(c, data, width_mm, height_mm):
-    """The plainer certified layout, matching the reference mockup: rounded
-    corners, a bold SKU header over a plain growth-type line, then a
-    Shp/Wt/Col/Cla column with plain (non-bold) labels and a generous
-    label-to-value gap, all in a larger font than earlier drafts -- checked
-    numerically to confirm GIA + the combined measurement string still fit
-    in the space left after the QR at this size.
+    """The plainer certified layout: rounded corners, a bold SKU header
+    (same point size as everything else -- bold is the only distinction)
+    over a plain growth-type line, a bigger gap, then Shp/Wt/Col/Cla as a
+    label/value column, with GIA cert # + combined measurements under the
+    QR -- all at one uniform font size.
 
-    Reads as two tight groups (header, fields) with one larger gap between
-    them. GIA/measurements share the QR's x (one aligned column), placed
-    right after the left content's widest line rather than pinned at the
-    far-right edge.
+    The QR is bigger here (12mm, not 8mm) specifically so GIA/measurements
+    fit under it at that same uniform size: it's anchored to the right
+    edge, so growing it pushes its *left* edge further left, which widens
+    -- not narrows -- the column available underneath it. Checked
+    numerically first: at 12mm the widest measurement string has ~1mm of
+    slack in that column.
     """
     font_size = 4.0
-    header_bold_size = 6.0
     label_w = 7
-    small_gap = 2.6
+    tight_gap = 2.6
     padding = 1.5  # same value on all four sides -- top, bottom, left, right
+    qr_size = 12  # bigger than QR_SIZE_MM used elsewhere -- see docstring
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
@@ -135,9 +136,10 @@ def render_certified_simple(c, data, width_mm, height_mm):
     # `padding` from the top edge. Text is positioned by baseline, so back
     # out the baseline from the font's real ascent instead of guessing.
     top_line_y = height_mm - padding
-    y0 = top_line_y - _ascent_mm(FONT_BOLD, header_bold_size)
-    qr_y = top_line_y - QR_SIZE_MM
-    _draw_qr(c, sku, width_mm - padding - QR_SIZE_MM, qr_y)
+    y0 = top_line_y - _ascent_mm(FONT, font_size)
+    qr_x = width_mm - padding - qr_size
+    qr_y = top_line_y - qr_size
+    _draw_qr(c, sku, qr_x, qr_y, size_mm=qr_size)
 
     field_rows = [
         ("Shp.", data.get("shape")),
@@ -148,30 +150,27 @@ def render_certified_simple(c, data, width_mm, height_mm):
     field_values = [v for _, v in field_rows if v]
     left_col_w = padding + label_w + max(
         (_text_width_mm(c, str(v), FONT, font_size) for v in field_values), default=0)
-    header_w = padding + max(_text_width_mm(c, sku, FONT_BOLD, header_bold_size),
+    header_w = padding + max(_text_width_mm(c, sku, FONT_BOLD, font_size),
                               _text_width_mm(c, growth_type, FONT, font_size))
-    qr_x = width_mm - padding - QR_SIZE_MM
     assert max(left_col_w, header_w) < qr_x, (
         f"left content ({max(left_col_w, header_w):.1f}mm) collides with the "
         f"right-fixed QR ({qr_x:.1f}mm) -- shrink font_size/label_w or widen the label"
     )
 
-    # 6 rows, 5 gaps: 1 within the header group + 3 within the field group
-    # (all `small_gap`) + 1 between the two groups (soaks up the rest of
-    # the available height, keeping top and bottom padding equal). y0 is
-    # already `ascent` below the top padding line, so that has to come out
-    # of the budget too or the last row overshoots the bottom padding.
-    between_gap = height_mm - padding * 2 - _ascent_mm(FONT_BOLD, header_bold_size) - small_gap * 4
-
-    y_growth = y0 - small_gap
+    # Header (SKU, growth) and fields (Shp/Wt/Col/Cla) each read as a tight
+    # group; the gap *between* the groups is enlarged instead, soaking up
+    # the rest of the available height so Cla still lands near the bottom
+    # padding line.
+    between_gap = height_mm - padding * 2 - _ascent_mm(FONT, font_size) - tight_gap * 4
+    y_growth = y0 - tight_gap
     y_fields_top = y_growth - between_gap
 
-    c.setFont(FONT_BOLD, header_bold_size)
+    c.setFont(FONT_BOLD, font_size)
     c.drawString(padding * mm, y0 * mm, sku)
     c.setFont(FONT, font_size)
     c.drawString(padding * mm, y_growth * mm, growth_type)
 
-    _text_col(c, field_rows, padding, y_fields_top, small_gap, font_size, label_w,
+    _text_col(c, field_rows, padding, y_fields_top, tight_gap, font_size, label_w,
               bold_label=False, label_suffix="")
 
     gia_line = f"GIA-{data['certificate_no']}" if data.get("certificate_no") else None
@@ -182,17 +181,10 @@ def render_certified_simple(c, data, width_mm, height_mm):
         dims = f"{dims}×{depth}" if dims else str(depth)
     meas_line = f"{dims}mm" if dims else None
 
-    # GIA + measurements aligned with the QR's x -- "in the same line" --
-    # directly below it. Right-fixed QR + right-side padding leaves only
-    # ~8mm of width there, not enough for these two strings at font_size
-    # (which fits fine on the left where there's much more room), so they
-    # get their own smaller size.
-    gia_font_size = 2.6
     y = qr_y - 1.4
-    c.setFont(FONT, gia_font_size)
     if gia_line:
         c.drawString(qr_x * mm, y * mm, gia_line)
-        y -= small_gap
+        y -= tight_gap
     if meas_line:
         c.drawString(qr_x * mm, y * mm, meas_line)
 
