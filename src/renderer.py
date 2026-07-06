@@ -34,6 +34,12 @@ def _draw_border(c, width_mm, height_mm, inset_mm=0.5, radius_mm=0):
 
 def _draw_qr(c, data, x_mm, y_mm, size_mm=QR_SIZE_MM):
     widget = QrCodeWidget(data or "")
+    # Default barBorder=4 bakes a quiet-zone margin into the widget's own
+    # bounding box, so the *visible* QR pattern sits inset within size_mm
+    # rather than filling it -- making it look misaligned against text
+    # whose glyphs start right at their nominal position. Zero it out so
+    # the bounding box we scale to size_mm matches what's actually drawn.
+    widget.barBorder = 0
     bounds = widget.getBounds()
     box_size = bounds[2] - bounds[0]
     scale = (size_mm * mm) / box_size
