@@ -14,7 +14,11 @@ def render_certified_ezpl(data):
     length, width, depth = data.get("length_mm"), data.get("width_mm"), data.get("depth_mm")
     dims = "-".join(str(v) for v in (length, width) if v not in (None, ""))
     if depth not in (None, ""):
-        dims = f"{dims}x{depth}" if dims else str(depth)
+        # U+00D7 (×) matches the reference mockup and is in Latin-1 (the PPD
+        # declares ISOLatin1), so it should print fine -- but confirm on a
+        # real print; if the printer's codepage doesn't have it, swap back
+        # to a plain ASCII "x".
+        dims = f"{dims}×{depth}" if dims else str(depth)
     measurements = f"{dims}mm" if dims else ""
 
     cert_no = data.get("certificate_no")
