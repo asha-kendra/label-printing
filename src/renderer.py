@@ -100,31 +100,55 @@ def render_parcel(c, data, width_mm, height_mm):
 
 def render_certified_simple(c, data, width_mm, height_mm):
     """The plainer certified layout: single Shp/Wt/Col/Cla column, GIA cert #
-    + combined measurements under the QR, QR fixed at the right edge.
+    + combined measurements aligned under the QR in one shared column.
 
-    One font size for every line on the label (2.6pt) -- the max size that
-    still lets "GIA-2478433766" and the combined measurement string fit in
-    the ~8mm of width left under a right-fixed QR, which is the tightest
-    constraint on the label. Row spacing (not font size) is stretched to
-    fill the full label height edge-to-edge, matching the real sample's
-    proportions instead of leaving the small font's naturally tight lines
-    clustered at the top."""
+    One font size for every line (2.6pt). The left side reads as two tight
+    groups -- header (SKU+growth) and fields (Shp/Wt/Col/Cla) -- with small,
+    even spacing inside each group and one larger gap between the two
+    groups (rather than one uniform gap stretched across all 6 rows), so
+    it fills the full height without looking sparse. The QR (and GIA/
+    measurements below it, at the same x) sits right after the left
+    column's widest line instead of pinned at the far-right edge, so
+    there's no big dead gap on the right.
+    """
     font_size = 2.6
     label_w = 2.6
+    small_gap = 2.0
     top_margin, bottom_margin, side_margin = 1.6, 1.6, 0.8
-    row_gap = (height_mm - top_margin - bottom_margin) / 5  # 6 rows -> 5 gaps
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
-    y0 = height_mm - top_margin
 
-    qr_x = width_mm - QR_SIZE_MM - MARGIN_MM
+    field_rows = [
+        ("Shp", data.get("shape")),
+        ("Wt", f"{data['weight_ct']} ct" if data.get("weight_ct") else None),
+        ("Col", data.get("colour")),
+        ("Cla", data.get("clarity")),
+    ]
+    field_values = [v for _, v in field_rows if v]
+    left_col_w = side_margin + label_w + max(
+        (_text_width_mm(c, str(v), FONT, font_size) for v in field_values), default=0)
+    header_w = side_margin + max(_text_width_mm(c, sku, FONT_BOLD, font_size),
+                                  _text_width_mm(c, growth_type, FONT, font_size))
+
+    qr_x = max(left_col_w, header_w) + 3
     _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
+
+    # 6 rows, 5 gaps: 1 within the header group + 3 within the field group
+    # (all `small_gap`) + 1 between the two groups (soaks up the rest of
+    # the available height).
+    between_gap = height_mm - top_margin - bottom_margin - small_gap * 4
+
+    y0 = height_mm - top_margin
+    y_growth = y0 - small_gap
+    y_fields_top = y_growth - between_gap
 
     c.setFont(FONT_BOLD, font_size)
     c.drawString(side_margin * mm, y0 * mm, sku)
     c.setFont(FONT, font_size)
-    c.drawString(side_margin * mm, (y0 - row_gap) * mm, growth_type)
+    c.drawString(side_margin * mm, y_growth * mm, growth_type)
+
+    _text_col(c, field_rows, side_margin, y_fields_top, small_gap, font_size, label_w)
 
     gia_line = f"GIA-{data['certificate_no']}" if data.get("certificate_no") else None
 
@@ -134,35 +158,15 @@ def render_certified_simple(c, data, width_mm, height_mm):
         dims = f"{dims}x{depth}" if dims else str(depth)
     meas_line = f"{dims}mm" if dims else None
 
-    field_values = [data.get("shape"), f"{data['weight_ct']} ct" if data.get("weight_ct") else None,
-                     data.get("colour"), data.get("clarity")]
-    left_col_w = side_margin + label_w + max(
-        (_text_width_mm(c, str(v), FONT, font_size) for v in field_values if v), default=0)
-    header_w = side_margin + max(_text_width_mm(c, sku, FONT_BOLD, font_size),
-                                  _text_width_mm(c, growth_type, FONT, font_size))
-
-    _text_col(
-        c,
-        [
-            ("Shp", data.get("shape")),
-            ("Wt", f"{data['weight_ct']} ct" if data.get("weight_ct") else None),
-            ("Col", data.get("colour")),
-            ("Cla", data.get("clarity")),
-        ],
-        side_margin, y0 - row_gap * 2, row_gap, font_size, label_w,
-    )
-
-    # GIA + measurements sit below the QR (different vertical band), not
-    # beside it -- so they can sit right after the left column instead of
-    # lining up with the QR's x, closing what was a ~14mm dead gap.
-    gia_x = min(max(left_col_w, header_w) + 3, qr_x - 2)
+    # GIA + measurements aligned with the QR's x -- "in the same line" --
+    # directly below it.
     y = height_mm - QR_SIZE_MM - MARGIN_MM - 1.2
     c.setFont(FONT, font_size)
     if gia_line:
-        c.drawString(gia_x * mm, y * mm, gia_line)
-        y -= row_gap
+        c.drawString(qr_x * mm, y * mm, gia_line)
+        y -= small_gap
     if meas_line:
-        c.drawString(gia_x * mm, y * mm, meas_line)
+        c.drawString(qr_x * mm, y * mm, meas_line)
 
 
 def render_jewellery(c, data, width_mm, height_mm):
