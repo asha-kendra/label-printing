@@ -134,6 +134,13 @@ def render_certified_simple(c, data, width_mm, height_mm):
         dims = f"{dims}x{depth}" if dims else str(depth)
     meas_line = f"{dims}mm" if dims else None
 
+    field_values = [data.get("shape"), f"{data['weight_ct']} ct" if data.get("weight_ct") else None,
+                     data.get("colour"), data.get("clarity")]
+    left_col_w = side_margin + label_w + max(
+        (_text_width_mm(c, str(v), FONT, font_size) for v in field_values if v), default=0)
+    header_w = side_margin + max(_text_width_mm(c, sku, FONT_BOLD, font_size),
+                                  _text_width_mm(c, growth_type, FONT, font_size))
+
     _text_col(
         c,
         [
@@ -145,15 +152,17 @@ def render_certified_simple(c, data, width_mm, height_mm):
         side_margin, y0 - row_gap * 2, row_gap, font_size, label_w,
     )
 
-    # Under the QR, not in the left column -- only ~8mm of width is left
-    # there once the QR is fixed at the right edge.
+    # GIA + measurements sit below the QR (different vertical band), not
+    # beside it -- so they can sit right after the left column instead of
+    # lining up with the QR's x, closing what was a ~14mm dead gap.
+    gia_x = min(max(left_col_w, header_w) + 3, qr_x - 2)
     y = height_mm - QR_SIZE_MM - MARGIN_MM - 1.2
     c.setFont(FONT, font_size)
     if gia_line:
-        c.drawString(qr_x * mm, y * mm, gia_line)
+        c.drawString(gia_x * mm, y * mm, gia_line)
         y -= row_gap
     if meas_line:
-        c.drawString(qr_x * mm, y * mm, meas_line)
+        c.drawString(gia_x * mm, y * mm, meas_line)
 
 
 def render_jewellery(c, data, width_mm, height_mm):
