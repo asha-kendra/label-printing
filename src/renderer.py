@@ -18,9 +18,13 @@ ROW_GAP = 2.0
 LABEL_W = 5.5
 
 
-def _draw_border(c, width_mm, height_mm, inset_mm=0.5):
+def _draw_border(c, width_mm, height_mm, inset_mm=0.5, radius_mm=0):
     c.setLineWidth(0.5)
-    c.rect(inset_mm * mm, inset_mm * mm, (width_mm - 2 * inset_mm) * mm, (height_mm - 2 * inset_mm) * mm, stroke=1, fill=0)
+    if radius_mm:
+        c.roundRect(inset_mm * mm, inset_mm * mm, (width_mm - 2 * inset_mm) * mm,
+                    (height_mm - 2 * inset_mm) * mm, radius_mm * mm, stroke=1, fill=0)
+    else:
+        c.rect(inset_mm * mm, inset_mm * mm, (width_mm - 2 * inset_mm) * mm, (height_mm - 2 * inset_mm) * mm, stroke=1, fill=0)
 
 
 def _draw_qr(c, data, x_mm, y_mm, size_mm=QR_SIZE_MM):
@@ -33,13 +37,15 @@ def _draw_qr(c, data, x_mm, y_mm, size_mm=QR_SIZE_MM):
     renderPDF.draw(drawing, c, x_mm * mm, y_mm * mm)
 
 
-def _text_col(c, lines, x_mm, top_y_mm, line_gap_mm=ROW_GAP, font_size=BODY_SIZE, label_width_mm=LABEL_W):
+def _text_col(c, lines, x_mm, top_y_mm, line_gap_mm=ROW_GAP, font_size=BODY_SIZE, label_width_mm=LABEL_W,
+              bold_label=True, label_suffix=":"):
     y = top_y_mm
+    label_font = FONT_BOLD if bold_label else FONT
     for label, value in lines:
         if value in (None, ""):
             continue
-        c.setFont(FONT_BOLD, font_size)
-        c.drawString(x_mm * mm, y * mm, f"{label}:")
+        c.setFont(label_font, font_size)
+        c.drawString(x_mm * mm, y * mm, f"{label}{label_suffix}")
         c.setFont(FONT, font_size)
         c.drawString((x_mm + label_width_mm) * mm, y * mm, str(value))
         y -= line_gap_mm
@@ -99,28 +105,29 @@ def render_parcel(c, data, width_mm, height_mm):
 
 
 def render_certified_simple(c, data, width_mm, height_mm):
-    """The plainer certified layout: single Shp/Wt/Col/Cla column, GIA cert #
-    + combined measurements aligned under the QR in one shared column.
+    """The plainer certified layout, matching the reference mockup: rounded
+    corners, a bold SKU header over a plain growth-type line, then a
+    Shp/Wt/Col/Cla column with plain (non-bold) labels and a generous
+    label-to-value gap, all in a larger font than earlier drafts -- checked
+    numerically to confirm GIA + the combined measurement string still fit
+    in the space left after the QR at this size.
 
-    One font size for every line (2.6pt). The left side reads as two tight
-    groups -- header (SKU+growth) and fields (Shp/Wt/Col/Cla) -- with small,
-    even spacing inside each group and one larger gap between the two
-    groups (rather than one uniform gap stretched across all 6 rows), so
-    it fills the full height without looking sparse. The QR (and GIA/
-    measurements below it, at the same x) sits right after the left
-    column's widest line instead of pinned at the far-right edge, so
-    there's no big dead gap on the right.
+    Reads as two tight groups (header, fields) with one larger gap between
+    them. GIA/measurements share the QR's x (one aligned column), placed
+    right after the left content's widest line rather than pinned at the
+    far-right edge.
     """
-    font_size = 2.6
-    label_w = 2.6
-    small_gap = 2.0
-    top_margin, bottom_margin, side_margin = 1.6, 1.6, 0.8
+    font_size = 4.0
+    header_bold_size = 6.0
+    label_w = 7
+    small_gap = 2.6
+    top_margin, bottom_margin, side_margin = 2.3, 1.4, 0.8
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
 
     field_rows = [
-        ("Shp", data.get("shape")),
+        ("Shp.", data.get("shape")),
         ("Wt", f"{data['weight_ct']} ct" if data.get("weight_ct") else None),
         ("Col", data.get("colour")),
         ("Cla", data.get("clarity")),
@@ -128,10 +135,10 @@ def render_certified_simple(c, data, width_mm, height_mm):
     field_values = [v for _, v in field_rows if v]
     left_col_w = side_margin + label_w + max(
         (_text_width_mm(c, str(v), FONT, font_size) for v in field_values), default=0)
-    header_w = side_margin + max(_text_width_mm(c, sku, FONT_BOLD, font_size),
+    header_w = side_margin + max(_text_width_mm(c, sku, FONT_BOLD, header_bold_size),
                                   _text_width_mm(c, growth_type, FONT, font_size))
 
-    qr_x = max(left_col_w, header_w) + 3
+    qr_x = max(left_col_w, header_w) + 2
     _draw_qr(c, sku, qr_x, height_mm - QR_SIZE_MM - MARGIN_MM)
 
     # 6 rows, 5 gaps: 1 within the header group + 3 within the field group
@@ -143,19 +150,20 @@ def render_certified_simple(c, data, width_mm, height_mm):
     y_growth = y0 - small_gap
     y_fields_top = y_growth - between_gap
 
-    c.setFont(FONT_BOLD, font_size)
+    c.setFont(FONT_BOLD, header_bold_size)
     c.drawString(side_margin * mm, y0 * mm, sku)
     c.setFont(FONT, font_size)
     c.drawString(side_margin * mm, y_growth * mm, growth_type)
 
-    _text_col(c, field_rows, side_margin, y_fields_top, small_gap, font_size, label_w)
+    _text_col(c, field_rows, side_margin, y_fields_top, small_gap, font_size, label_w,
+              bold_label=False, label_suffix="")
 
     gia_line = f"GIA-{data['certificate_no']}" if data.get("certificate_no") else None
 
     length, width, depth = data.get("length_mm"), data.get("width_mm"), data.get("depth_mm")
     dims = "-".join(str(v) for v in (length, width) if v not in (None, ""))
     if depth not in (None, ""):
-        dims = f"{dims}x{depth}" if dims else str(depth)
+        dims = f"{dims}×{depth}" if dims else str(depth)
     meas_line = f"{dims}mm" if dims else None
 
     # GIA + measurements aligned with the QR's x -- "in the same line" --
@@ -250,7 +258,7 @@ def render_label_pdf(data, output_path, width_mm=None, height_mm=None):
         raise ValueError(f"No renderer for label type {data['label_type']!r}")
 
     c = canvas.Canvas(output_path, pagesize=(width_mm * mm, height_mm * mm))
-    _draw_border(c, width_mm, height_mm)
+    _draw_border(c, width_mm, height_mm, radius_mm=1.2)
     renderer(c, data, width_mm, height_mm)
     c.showPage()
     c.save()
