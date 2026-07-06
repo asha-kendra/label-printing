@@ -10,14 +10,7 @@ def _load_template(name):
 def render_certified_ezpl(data):
     """Fill in the real EZPL template (templates/certified.ezpl) -- the
     printer's own native command language, exported from the existing
-    system -- rather than reconstructing the layout via PDF/CSS.
-
-    NOTE: <COLOR> (row 2, right under the item number) is mapped to
-    growth_type ("Natural"/"Lab Grown") since that's the closest match to
-    what's shown there in the real label photos, but the template's own
-    naming suggests it might be intended for a fancy-color grade instead.
-    Confirm this mapping once tested against a live print.
-    """
+    system -- rather than reconstructing the layout via PDF/CSS."""
     length, width, depth = data.get("length_mm"), data.get("width_mm"), data.get("depth_mm")
     dims = "-".join(str(v) for v in (length, width) if v not in (None, ""))
     if depth not in (None, ""):

@@ -68,12 +68,7 @@ supported: `parcel`, `certified`, `jewellery`, `matching_pairs`.
 3. **Category-match substrings** (`parcel`, `certified`, `jewellery`,
    `matching pair`) assume those words appear in the item's category or item
    group name in Zoho -- confirm and adjust in the same config file.
-4. **`<COLOR>` in `templates/certified.ezpl`** (row 2, right under the item
-   number) is mapped to `growth_type` in `src/ezpl_renderer.py` since that's
-   the closest match to what real label photos show there -- but the
-   template's own naming suggests it might be meant for a fancy-color grade
-   instead. Confirm against a live print.
-5. **EZPL units are unconfirmed.** `templates/certified.ezpl` is the real
+4. **EZPL units are unconfirmed.** `templates/certified.ezpl` is the real
    template exported from the existing system, used as-is without knowing
    whether its `^Q152,24`/`^W280` units line up with 300dpi or another
    resolution -- test a real print before trusting the physical size.
