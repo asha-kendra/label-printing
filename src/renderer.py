@@ -102,14 +102,17 @@ def render_certified_simple(c, data, width_mm, height_mm):
     """The plainer certified layout: single Shp/Wt/Col/Cla column, GIA cert #
     + combined measurements under the QR, QR fixed at the right edge.
 
-    One font size for every line on the label (2.8pt) -- the max size that
+    One font size for every line on the label (2.6pt) -- the max size that
     still lets "GIA-2478433766" and the combined measurement string fit in
     the ~8mm of width left under a right-fixed QR, which is the tightest
-    constraint on the label."""
+    constraint on the label. Row spacing (not font size) is stretched to
+    fill the full label height edge-to-edge, matching the real sample's
+    proportions instead of leaving the small font's naturally tight lines
+    clustered at the top."""
     font_size = 2.6
     label_w = 2.6
-    row_gap = 1.7
-    top_margin, side_margin = 1.6, 0.8
+    top_margin, bottom_margin, side_margin = 1.6, 1.6, 0.8
+    row_gap = (height_mm - top_margin - bottom_margin) / 5  # 6 rows -> 5 gaps
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
