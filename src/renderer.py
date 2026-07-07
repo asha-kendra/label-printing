@@ -122,22 +122,24 @@ def render_certified_simple(c, data, width_mm, height_mm):
     label/value column, with GIA cert # + combined measurements under the
     QR -- all at one uniform font size.
 
-    The GIA/measurements column width is pinned to `text_col_w`, *not*
-    derived from the QR's own size: that's how wide the widest realistic
-    measurement string ("10.03-9.32x6.30mm") needs at this uniform font
-    size, checked numerically (~1mm slack once corner clearance is
-    factored in). The QR is drawn smaller and stays right-anchored to the
-    same padding as the text column, so their right edges still line up
-    even though the QR's left edge sits further right (shrinking it opens
-    up blank margin there rather than taking width from the text below).
+    The QR and the GIA/measurements column below share one width (`col_w`),
+    right-anchored to the same padding, so their left AND right edges line
+    up exactly. `col_w` is set by the text side -- the widest realistic
+    measurement string ("10.03-9.32x6.30mm") needs ~12mm at this uniform
+    font size (checked numerically, ~1mm slack once corner clearance is
+    factored in) -- so the QR can't shrink independently of it: since both
+    are right-anchored at the same edge, a narrower QR only leaves room for
+    a narrower text column too, which the measurements would overflow.
+    `tight_gap` is kept as close to the font's natural line height as
+    possible specifically to maximize the gap left over between the QR's
+    bottom edge and the GIA line, so the two clearly aren't touching.
     """
     font_size = 4.0
     label_w = 7
-    tight_gap = 1.35  # near-natural single-line spacing (ascent+descent ~1.3mm) -- no extra line space
+    tight_gap = 1.32  # just above natural single-line spacing (~1.305mm) -- maximizes QR/GIA clearance
     padding = 1.5  # left, right, bottom
     top_padding = 2.5  # extra breathing room above the header/QR specifically
-    qr_size = 8  # visual QR box size, right-anchored
-    text_col_w = 12  # GIA/measurements column width -- independent of qr_size, see docstring
+    col_w = 12  # shared QR + GIA/measurements width, see docstring
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
@@ -147,10 +149,10 @@ def render_certified_simple(c, data, width_mm, height_mm):
     # back out the baseline from the font's real ascent instead of guessing.
     top_line_y = height_mm - top_padding
     y0 = top_line_y - _ascent_mm(FONT, font_size)
-    qr_x = width_mm - padding - qr_size
-    qr_y = top_line_y - qr_size
-    text_x = width_mm - padding - text_col_w
-    _draw_qr(c, sku, qr_x, qr_y, size_mm=qr_size)
+    qr_x = width_mm - padding - col_w
+    qr_y = top_line_y - col_w
+    text_x = qr_x
+    _draw_qr(c, sku, qr_x, qr_y, size_mm=col_w)
 
     field_rows = [
         ("Shp.", data.get("shape")),
