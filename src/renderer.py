@@ -136,7 +136,10 @@ def render_certified_simple(c, data, width_mm, height_mm):
     padding = 1.5  # left, right, bottom
     top_padding = 2.5  # extra breathing room above the header/QR specifically
     qr_size = 9  # visual QR box size, right-anchored
-    text_col_w = 12  # GIA/measurements column width -- independent of qr_size, see docstring
+    text_col_w = 12.5  # GIA/measurements column width -- independent of qr_size, see docstring.
+    # A bit wider than the ~11.9mm the widest realistic measurement string
+    # needs, so its right edge keeps clearance from the rounded bottom-right
+    # corner (checked against the double-digit worst case, not just this mm).
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
