@@ -117,74 +117,62 @@ def render_parcel(c, data, width_mm, height_mm):
 
 def render_certified_simple(c, data, width_mm, height_mm):
     """The plainer certified layout: rounded corners, a bold SKU header
-    (same point size as everything else -- bold is the only distinction)
-    over a plain growth-type line, a bigger gap, then Shp/Wt/Col/Cla as a
-    label/value column, with GIA cert # + combined measurements under the
-    QR -- all at one uniform font size.
+    over a plain growth-type line, Shp/Wt/Col/Cla as a label/value column,
+    and GIA cert # + measurements in a right column under a small QR --
+    all at one uniform font size.
 
-    The QR and the GIA/measurements column below share one width (`col_w`),
-    right-anchored to the same padding, so their left AND right edges line
-    up exactly. `col_w` is set by the text side -- the widest realistic
-    measurement string ("10.03-9.32x6.30mm") needs ~12mm at this uniform
-    font size (checked numerically, ~1mm slack once corner clearance is
-    factored in) -- so the QR can't shrink independently of it: since both
-    are right-anchored at the same edge, a narrower QR only leaves room for
-    a narrower text column too, which the measurements would overflow.
-    `tight_gap` is kept as close to the font's natural line height as
-    possible specifically to maximize the gap left over between the QR's
-    bottom edge and the GIA line, so the two clearly aren't touching.
+    Hand-positioned via the layout-bench editor rather than derived from a
+    formula: Cla and the measurements line share a baseline (16.1mm from
+    the top) so the two columns read as aligned at the bottom, and the QR
+    sits well clear of GIA below it. Every coordinate here is `mm from the
+    top edge to the text's baseline` (matching EZPL's AA/BQ convention
+    directly) -- convert to reportlab's bottom-up y with
+    `height_mm - y_from_top` and nothing else, no ascent math needed.
     """
-    font_size = 4.0
-    label_w = 7
-    tight_gap = 1.32  # just above natural single-line spacing (~1.305mm) -- maximizes QR/GIA clearance
-    padding = 1.5  # left, right, bottom
-    top_padding = 2.5  # extra breathing room above the header/QR specifically
-    col_w = 12  # shared QR + GIA/measurements width, see docstring
+    font_size = 4.0  # uniform across every line, on purpose
+
+    left_x = 2.0
+    value_x = 9.0
+    right_x = 17.0
+
+    positions = {
+        "sku": (left_x, 3.5),
+        "growth": (left_x, 5.7),
+        "shp_label": (left_x, 9.0), "shp_value": (value_x, 9.0),
+        "wt_label": (left_x, 11.6), "wt_value": (value_x, 11.6),
+        "col_label": (left_x, 13.9), "col_value": (value_x, 13.9),
+        "cla_label": (left_x, 16.1), "cla_value": (value_x, 16.1),
+        "gia": (right_x, 13.5),
+        "meas": (right_x, 16.1),
+    }
+    qr_x, qr_top, qr_size = right_x, 2.2, 8.8
+
+    def to_bottom(y_from_top):
+        return height_mm - y_from_top
+
+    def draw(key, text, font=FONT):
+        x, y = positions[key]
+        c.setFont(font, font_size)
+        c.drawString(x * mm, to_bottom(y) * mm, text)
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
 
-    # QR's top and the item name's top sit on the same line: both start at
-    # `top_padding` from the top edge. Text is positioned by baseline, so
-    # back out the baseline from the font's real ascent instead of guessing.
-    top_line_y = height_mm - top_padding
-    y0 = top_line_y - _ascent_mm(FONT, font_size)
-    qr_x = width_mm - padding - col_w
-    qr_y = top_line_y - col_w
-    text_x = qr_x
-    _draw_qr(c, sku, qr_x, qr_y, size_mm=col_w)
+    _draw_qr(c, sku, qr_x, to_bottom(qr_top) - qr_size, size_mm=qr_size)
+
+    draw("sku", sku, FONT_BOLD)
+    draw("growth", growth_type)
 
     field_rows = [
-        ("Shp.", data.get("shape")),
-        ("Wt", f"{data['weight_ct']} ct" if data.get("weight_ct") else None),
-        ("Col", data.get("colour")),
-        ("Cla", data.get("clarity")),
+        ("shp", "Shp.", data.get("shape")),
+        ("wt", "Wt", f"{data['weight_ct']} ct" if data.get("weight_ct") else None),
+        ("col", "Col", data.get("colour")),
+        ("cla", "Cla", data.get("clarity")),
     ]
-    field_values = [v for _, v in field_rows if v]
-    left_col_w = padding + label_w + max(
-        (_text_width_mm(c, str(v), FONT, font_size) for v in field_values), default=0)
-    header_w = padding + max(_text_width_mm(c, sku, FONT_BOLD, font_size),
-                              _text_width_mm(c, growth_type, FONT, font_size))
-    assert max(left_col_w, header_w) < text_x, (
-        f"left content ({max(left_col_w, header_w):.1f}mm) collides with the "
-        f"GIA/measurements column ({text_x:.1f}mm) -- shrink font_size/label_w or widen the label"
-    )
-
-    # Header (SKU, growth) and fields (Shp/Wt/Col/Cla) each read as a tight
-    # group; the gap *between* the groups is enlarged instead, soaking up
-    # the rest of the available height so Cla still lands near the bottom
-    # padding line.
-    between_gap = height_mm - top_padding - padding - _ascent_mm(FONT, font_size) - tight_gap * 4
-    y_growth = y0 - tight_gap
-    y_fields_top = y_growth - between_gap
-
-    c.setFont(FONT_BOLD, font_size)
-    c.drawString(padding * mm, y0 * mm, sku)
-    c.setFont(FONT, font_size)
-    c.drawString(padding * mm, y_growth * mm, growth_type)
-
-    _text_col(c, field_rows, padding, y_fields_top, tight_gap, font_size, label_w,
-              bold_label=False, label_suffix="")
+    for key, label, value in field_rows:
+        draw(f"{key}_label", label)
+        if value not in (None, ""):
+            draw(f"{key}_value", str(value))
 
     lab = data.get("certificate_lab") or "GIA"
     gia_line = f"{lab}-{data['certificate_no']}" if data.get("certificate_no") else None
@@ -195,21 +183,10 @@ def render_certified_simple(c, data, width_mm, height_mm):
         dims = f"{dims}×{depth}" if dims else str(depth)
     meas_line = f"{dims}mm" if dims else None
 
-    # Bottom-anchored tight pair, same as the fields list: meas_line sits
-    # exactly on the padding line and gia_line sits one tight_gap above it,
-    # so the box reads with no line space -- any leftover room goes above
-    # the pair (between it and the QR), not inside it.
-    meas_y = padding
-    gia_y = meas_y + tight_gap
-    clearance = qr_y - (gia_y + _ascent_mm(FONT, font_size))
-    assert clearance > 0, (
-        f"gia_line ({gia_y:.2f}mm) collides with the QR's bottom edge ({qr_y:.2f}mm) "
-        f"-- shrink tight_gap or col_w"
-    )
     if gia_line:
-        c.drawString(text_x * mm, gia_y * mm, gia_line)
+        draw("gia", gia_line)
     if meas_line:
-        c.drawString(text_x * mm, meas_y * mm, meas_line)
+        draw("meas", meas_line)
 
 
 def render_jewellery(c, data, width_mm, height_mm):
