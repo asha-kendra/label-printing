@@ -186,7 +186,8 @@ def render_certified_simple(c, data, width_mm, height_mm):
     _text_col(c, field_rows, padding, y_fields_top, tight_gap, font_size, label_w,
               bold_label=False, label_suffix="")
 
-    gia_line = f"GIA-{data['certificate_no']}" if data.get("certificate_no") else None
+    lab = data.get("certificate_lab") or "GIA"
+    gia_line = f"{lab}-{data['certificate_no']}" if data.get("certificate_no") else None
 
     length, width, depth = data.get("length_mm"), data.get("width_mm"), data.get("depth_mm")
     dims = "-".join(str(v) for v in (length, width) if v not in (None, ""))

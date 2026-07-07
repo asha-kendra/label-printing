@@ -21,22 +21,23 @@
 
   "certified": {
     "sku": ["sku", "stock no", "stock #"],
-    "growth_type": ["growth type", "natural/lab", "type"],
+    "growth_type": ["growth type", "natural/lab", "type", "producttype"],
     "shape": ["shape"],
-    "weight_ct": ["weight", "wt (ct)", "carat weight"],
+    "weight_ct": ["weight", "wt (ct)", "carat weight", "carat/units (in)"],
     "colour": ["colour", "color"],
     "clarity": ["clarity"],
     "cut": ["cut"],
     "polish": ["polish", "pol"],
     "symmetry": ["symmetry", "sym"],
     "fluorescence": ["fluorescence", "flu"],
-    "length_mm": ["length", "meas l", "length (mm)"],
-    "width_mm": ["width", "meas w", "width (mm)"],
-    "depth_mm": ["depth", "meas d", "depth (mm)"],
+    "length_mm": ["length", "meas l", "length (mm)", "length(mm)"],
+    "width_mm": ["width", "meas w", "width (mm)", "width(mm)"],
+    "depth_mm": ["depth", "meas d", "depth (mm)", "depth(mm)"],
     "table_pct": ["table %", "table"],
-    "depth_pct": ["depth %", "depth percent"],
+    "depth_pct": ["depth %", "depth percent", "depth percentage"],
     "ratio_pct": ["ratio", "ratio %"],
-    "certificate_no": ["gia certificate #", "certificate no", "cert no", "gia report number"]
+    "certificate_no": ["gia certificate #", "certificate no", "cert no", "gia report number"],
+    "certificate_lab": ["lab", "certificate lab", "cert lab"]
   },
 
   "jewellery": {

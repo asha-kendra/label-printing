@@ -22,7 +22,8 @@ def render_certified_ezpl(data):
     measurements = f"{dims}mm" if dims else ""
 
     cert_no = data.get("certificate_no")
-    cert_field = f"GIA-{cert_no}" if cert_no else ""
+    lab = data.get("certificate_lab") or "GIA"
+    cert_field = f"{lab}-{cert_no}" if cert_no else ""
 
     weight_ct = data.get("weight_ct")
     weight_field = f"{weight_ct} ct" if weight_ct else ""
