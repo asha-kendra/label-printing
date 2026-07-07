@@ -132,7 +132,7 @@ def render_certified_simple(c, data, width_mm, height_mm):
     """
     font_size = 4.0
     label_w = 7
-    tight_gap = 2.6
+    tight_gap = 1.6  # near-natural single-line spacing (ascent+descent ~1.3mm) -- no extra line space
     padding = 1.5  # left, right, bottom
     top_padding = 2.5  # extra breathing room above the header/QR specifically
     qr_size = 9  # visual QR box size, right-anchored
@@ -191,14 +191,12 @@ def render_certified_simple(c, data, width_mm, height_mm):
         dims = f"{dims}×{depth}" if dims else str(depth)
     meas_line = f"{dims}mm" if dims else None
 
-    # Position by real clearance from the QR's bottom edge to the text's
-    # cap-height top (not baseline -- baseline-only offsets undercount by
-    # a whole ascent and can let the glyph overlap the QR), then size the
-    # GIA-to-meas gap so meas_line's baseline lands exactly on the bottom
-    # padding line regardless of how tall the QR ends up being.
-    gia_top_clearance = 0.39
-    gia_y = qr_y - gia_top_clearance - _ascent_mm(FONT, font_size)
+    # Bottom-anchored tight pair, same as the fields list: meas_line sits
+    # exactly on the padding line and gia_line sits one tight_gap above it,
+    # so the box reads with no line space -- any leftover room goes above
+    # the pair (between it and the QR), not inside it.
     meas_y = padding
+    gia_y = meas_y + tight_gap
     if gia_line:
         c.drawString(text_x * mm, gia_y * mm, gia_line)
     if meas_line:
