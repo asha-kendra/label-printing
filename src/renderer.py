@@ -122,24 +122,20 @@ def render_certified_simple(c, data, width_mm, height_mm):
     label/value column, with GIA cert # + combined measurements under the
     QR -- all at one uniform font size.
 
-    The GIA/measurements column width is pinned to `text_col_w` (12mm),
-    *not* derived from the QR's own size: that's how wide the widest
-    realistic measurement string ("10.03-9.32x6.30mm") needs at this
-    uniform font size, checked numerically (~1mm slack). The QR itself is
-    drawn smaller and stays right-anchored, so shrinking it just opens up
-    blank margin above-left of the QR -- it doesn't take width away from
-    the text column below, which would otherwise overflow the label edge.
+    The QR and the GIA/measurements column below share one width (`col_w`)
+    so their left AND right edges line up -- both right-anchored to the
+    same padding, both `col_w` wide. `col_w` is set by the text side: it's
+    the widest realistic measurement string ("10.03-9.32x6.30mm") needs at
+    this uniform font size, checked numerically (~1mm slack once corner
+    clearance is factored in) -- the QR just happens to match it now
+    rather than being sized independently.
     """
     font_size = 4.0
     label_w = 7
-    tight_gap = 1.6  # near-natural single-line spacing (ascent+descent ~1.3mm) -- no extra line space
+    tight_gap = 1.35  # near-natural single-line spacing (ascent+descent ~1.3mm) -- no extra line space
     padding = 1.5  # left, right, bottom
     top_padding = 2.5  # extra breathing room above the header/QR specifically
-    qr_size = 9  # visual QR box size, right-anchored
-    text_col_w = 12.5  # GIA/measurements column width -- independent of qr_size, see docstring.
-    # A bit wider than the ~11.9mm the widest realistic measurement string
-    # needs, so its right edge keeps clearance from the rounded bottom-right
-    # corner (checked against the double-digit worst case, not just this mm).
+    col_w = 12  # shared QR + GIA/measurements width, see docstring
 
     sku = data.get("sku") or ""
     growth_type = data.get("growth_type") or "Natural"
@@ -149,10 +145,10 @@ def render_certified_simple(c, data, width_mm, height_mm):
     # back out the baseline from the font's real ascent instead of guessing.
     top_line_y = height_mm - top_padding
     y0 = top_line_y - _ascent_mm(FONT, font_size)
-    qr_x = width_mm - padding - qr_size
-    qr_y = top_line_y - qr_size
-    text_x = width_mm - padding - text_col_w
-    _draw_qr(c, sku, qr_x, qr_y, size_mm=qr_size)
+    qr_x = width_mm - padding - col_w
+    qr_y = top_line_y - col_w
+    text_x = qr_x
+    _draw_qr(c, sku, qr_x, qr_y, size_mm=col_w)
 
     field_rows = [
         ("Shp.", data.get("shape")),
@@ -200,6 +196,11 @@ def render_certified_simple(c, data, width_mm, height_mm):
     # the pair (between it and the QR), not inside it.
     meas_y = padding
     gia_y = meas_y + tight_gap
+    clearance = qr_y - (gia_y + _ascent_mm(FONT, font_size))
+    assert clearance > 0, (
+        f"gia_line ({gia_y:.2f}mm) collides with the QR's bottom edge ({qr_y:.2f}mm) "
+        f"-- shrink tight_gap or col_w"
+    )
     if gia_line:
         c.drawString(text_x * mm, gia_y * mm, gia_line)
     if meas_line:
