@@ -74,10 +74,13 @@ catalyst init      # choose: Functions -> Advanced I/O -> Node.js
 ```
 
 Replace the scaffolded function's files with everything in
-`functions/print_label_node/` (`main.js`, `labelData.js`, `zohoClient.js`,
+`functions/print_label_node/` (`index.js`, `labelData.js`, `zohoClient.js`,
 `ezplRenderer.js`, `pdfRenderer.js`, `package.json`, `package-lock.json`).
 Run `npm install` inside that folder if the console/CLI doesn't do it for
-you automatically on deploy.
+you automatically on deploy. The entry file is named `index.js` on
+purpose (not `main.js`) -- a "flavour"/entry-point crash on a
+same-content-but-different-name deploy pointed at Catalyst's Node
+runtime specifically looking for that filename.
 
 Same environment variables as below, same `catalyst deploy`, same URL
 shape (`?item_id=<id>&format=ezpl|pdf`).
