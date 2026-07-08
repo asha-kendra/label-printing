@@ -7,6 +7,14 @@ as a URL instead of a local CLI command. It's a copy, not a shared package
 with `../src/` -- if you change the fetch/mapping/render logic later, copy
 the change into both places, or these will drift apart.
 
+It's also flat on purpose: `label_mapper.py`'s field-mapping rules and
+`ezpl_renderer.py`'s EZPL templates are inlined as Python literals rather
+than read from `config/label_fields.json` / `templates/*.ezpl` at runtime.
+The first deploy attempt crashed with `FileNotFoundError` because those
+subdirectories didn't survive the upload -- so this folder now has zero
+files besides the six `.py` files + `requirements.txt`, and nothing it
+does at runtime depends on anything but those.
+
 ## What this does and doesn't do
 
 - **Does:** given `?item_id=<id>`, fetch the item + custom fields from your
@@ -53,9 +61,9 @@ root):
 catalyst init      # choose: Functions -> Advanced I/O -> Python
                     # name it print_label, then replace the scaffolded
                     # functions/print_label/ contents with this folder's
-                    # main.py, requirements.txt, config.py, zoho_client.py,
-                    # label_mapper.py, ezpl_renderer.py, renderer.py,
-                    # config/label_fields.json, templates/*.ezpl
+                    # 6 files: main.py, requirements.txt, config.py,
+                    # zoho_client.py, label_mapper.py, ezpl_renderer.py,
+                    # renderer.py -- no subfolders needed
 ```
 
 If you already have a Catalyst project, use `catalyst function:create`
