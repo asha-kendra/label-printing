@@ -1,0 +1,9 @@
+{
+  "name": "print_label",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "pdfkit": "^0.15.0",
+    "qrcode": "^1.5.4"
+  }
+}

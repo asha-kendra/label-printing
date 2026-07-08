@@ -1,19 +1,33 @@
 # Zoho Catalyst deployment: click-a-URL label generation
 
-`functions/print_label/` is a self-contained Catalyst Advanced I/O function
-(Python) that reproduces this project's fetch → map → render pipeline
-(`zoho_client` → `label_mapper` → `ezpl_renderer`/`renderer`) so it can run
-as a URL instead of a local CLI command. It's a copy, not a shared package
-with `../src/` -- if you change the fetch/mapping/render logic later, copy
-the change into both places, or these will drift apart.
+Two implementations of the same function, pick one:
 
-It's also flat on purpose: `label_mapper.py`'s field-mapping rules and
-`ezpl_renderer.py`'s EZPL templates are inlined as Python literals rather
-than read from `config/label_fields.json` / `templates/*.ezpl` at runtime.
-The first deploy attempt crashed with `FileNotFoundError` because those
-subdirectories didn't survive the upload -- so this folder now has zero
-files besides the six `.py` files + `requirements.txt`, and nothing it
-does at runtime depends on anything but those.
+- **`functions/print_label/`** (Python) -- reproduces this project's own
+  fetch → map → render pipeline (`zoho_client` → `label_mapper` →
+  `ezpl_renderer`/`renderer`) as closely as possible.
+- **`functions/print_label_node/`** (Node.js) -- a from-scratch port of the
+  same logic. Built after the Python function's runtime (`python_3_13`)
+  turned out to have **no in-console code editor at all** ("Please use
+  CLI"), which made it hard to tell whether upload problems were code bugs
+  or deployment-path issues. Node.js Advanced I/O functions are more
+  commonly editable directly in the Catalyst console, which may sidestep
+  that entirely -- worth trying first if you hit the same wall.
+
+Both are copies, not a shared package with `../src/` -- if you change the
+fetch/mapping/render logic later, copy the change into all three places
+(`src/`, here, and there), or they'll drift apart.
+
+Both are also flat on purpose: the field-mapping rules and EZPL templates
+are inlined as code (Python dict / JS object and template-literal strings)
+rather than read from `config/label_fields.json` / `templates/*.ezpl` at
+runtime. The first Python deploy attempt crashed with `FileNotFoundError`
+because those subdirectories didn't survive the upload -- so neither
+function has any file it depends on besides its own source files.
+
+The Node version was verified locally end-to-end (mocked Zoho fetch,
+matched the Python EZPL output byte-for-byte, PDF opens and renders
+correctly) before being written up here -- see
+`functions/print_label_node/` for the source.
 
 ## What this does and doesn't do
 
@@ -39,15 +53,36 @@ does at runtime depends on anything but those.
 
 ## Before you deploy
 
-I could not verify `main.py`'s exact handler signature against Zoho's
-current docs -- `docs.catalyst.zoho.com` blocks automated fetches (the
-same issue `zoho_client.py` already flags for the Inventory custom-modules
-API). It's written against the Flask-`Request`-based Advanced I/O pattern
-Catalyst's own tutorials use, but **run `catalyst init` yourself first,
-compare its scaffolded `main.py` to this one, and adjust the request/response
+I could not verify either function's exact handler signature against
+Zoho's current docs -- `docs.catalyst.zoho.com` blocks automated fetches
+(the same issue `zoho_client.py` already flags for the Inventory
+custom-modules API). The Python version is written against the
+Flask-`Request`-based Advanced I/O pattern Catalyst's own tutorials use;
+the Node version against the commonly-documented Express-style `(req, res)`
+pattern. **Compare whichever one you use against what `catalyst init`
+actually scaffolds for that runtime, and adjust the request/response
 handling if the SDK has since changed.**
 
-## Setup
+## Setup: Node.js (`print_label_node`)
+
+```bash
+npm install -g zcatalyst-cli
+catalyst login
+cd catalyst
+catalyst init      # choose: Functions -> Advanced I/O -> Node.js
+                    # name it print_label (or print_label_node)
+```
+
+Replace the scaffolded function's files with everything in
+`functions/print_label_node/` (`main.js`, `labelData.js`, `zohoClient.js`,
+`ezplRenderer.js`, `pdfRenderer.js`, `package.json`, `package-lock.json`).
+Run `npm install` inside that folder if the console/CLI doesn't do it for
+you automatically on deploy.
+
+Same environment variables as below, same `catalyst deploy`, same URL
+shape (`?item_id=<id>&format=ezpl|pdf`).
+
+## Setup: Python (`print_label`)
 
 ```bash
 npm install -g zcatalyst-cli   # if not already installed
