@@ -177,11 +177,15 @@ def render_certified_simple(c, data, width_mm, height_mm):
     lab = data.get("certificate_lab") or "GIA"
     gia_line = f"{lab}-{data['certificate_no']}" if data.get("certificate_no") else None
 
-    length, width, depth = data.get("length_mm"), data.get("width_mm"), data.get("depth_mm")
-    dims = "-".join(str(v) for v in (length, width) if v not in (None, ""))
-    if depth not in (None, ""):
-        dims = f"{dims}×{depth}" if dims else str(depth)
-    meas_line = f"{dims}mm" if dims else None
+    measurements_mm = data.get("measurements_mm")
+    if measurements_mm:
+        meas_line = f"{str(measurements_mm).replace('x', '×')}mm"
+    else:
+        length, width, depth = data.get("length_mm"), data.get("width_mm"), data.get("depth_mm")
+        dims = "-".join(str(v) for v in (length, width) if v not in (None, ""))
+        if depth not in (None, ""):
+            dims = f"{dims}×{depth}" if dims else str(depth)
+        meas_line = f"{dims}mm" if dims else None
 
     if gia_line:
         draw("gia", gia_line)

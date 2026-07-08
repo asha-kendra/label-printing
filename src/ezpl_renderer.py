@@ -11,15 +11,21 @@ def render_certified_ezpl(data):
     """Fill in the real EZPL template (templates/certified.ezpl) -- the
     printer's own native command language, exported from the existing
     system -- rather than reconstructing the layout via PDF/CSS."""
-    length, width, depth = data.get("length_mm"), data.get("width_mm"), data.get("depth_mm")
-    dims = "-".join(str(v) for v in (length, width) if v not in (None, ""))
-    if depth not in (None, ""):
-        # U+00D7 (×) matches the reference mockup and is in Latin-1 (the PPD
-        # declares ISOLatin1), so it should print fine -- but confirm on a
-        # real print; if the printer's codepage doesn't have it, swap back
-        # to a plain ASCII "x".
-        dims = f"{dims}×{depth}" if dims else str(depth)
-    measurements = f"{dims}mm" if dims else ""
+    measurements_mm = data.get("measurements_mm")
+    if measurements_mm:
+        # Zoho's own combined field (e.g. "7.13x6.76x4.39") -- swap the ASCII
+        # "x" for U+00D7 (×, matches the reference mockup, in Latin-1 which
+        # the PPD declares -- but confirm on a real print) and append the unit,
+        # since the field's value doesn't include either.
+        measurements = f"{str(measurements_mm).replace('x', '×')}mm"
+    else:
+        # Fall back to combining the separate L/W/D fields, for orgs/items
+        # that don't have the combined field.
+        length, width, depth = data.get("length_mm"), data.get("width_mm"), data.get("depth_mm")
+        dims = "-".join(str(v) for v in (length, width) if v not in (None, ""))
+        if depth not in (None, ""):
+            dims = f"{dims}×{depth}" if dims else str(depth)
+        measurements = f"{dims}mm" if dims else ""
 
     cert_no = data.get("certificate_no")
     lab = data.get("certificate_lab") or "GIA"
