@@ -1,8 +1,11 @@
 import os
 
-from dotenv import load_dotenv
-
-load_dotenv()
+# No python-dotenv here on purpose: this runs as a Catalyst function, which
+# injects environment variables directly -- there's no .env file to load,
+# and load_dotenv() walking the filesystem looking for one was the likely
+# cause of the FileNotFoundError seen at every request (it ran unconditionally
+# at import time, before any request-specific code, which matched every
+# request failing identically regardless of path or params).
 
 ZOHO_CLIENT_ID = os.environ["ZOHO_CLIENT_ID"]
 ZOHO_CLIENT_SECRET = os.environ["ZOHO_CLIENT_SECRET"]
