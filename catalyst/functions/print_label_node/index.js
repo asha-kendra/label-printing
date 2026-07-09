@@ -29,15 +29,29 @@ function send(res, status, headers, body) {
   res.end(body);
 }
 
+// req.query doesn't exist on this native-Node-http-shaped request either
+// (same story as res not being Express-shaped) -- parse it from req.url
+// directly. Fall back to req.query in case some wrapping does provide it.
+function getQuery(req) {
+  if (req.query && typeof req.query === "object") return req.query;
+  try {
+    const parsed = new URL(req.url, "http://placeholder");
+    return Object.fromEntries(parsed.searchParams.entries());
+  } catch (err) {
+    return {};
+  }
+}
+
 module.exports = async (req, res) => {
-  const itemId = req.query && req.query.item_id;
+  const query = getQuery(req);
+  const itemId = query.item_id;
   if (!itemId) {
     send(res, 400, { "Content-Type": "text/plain" }, "Missing required query param: item_id");
     return;
   }
 
-  const labelType = (req.query && req.query.label_type) || null;
-  const format = ((req.query && req.query.format) || "pdf").toLowerCase();
+  const labelType = query.label_type || null;
+  const format = (query.format || "pdf").toLowerCase();
 
   let data;
   try {
