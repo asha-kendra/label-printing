@@ -101,4 +101,59 @@ function buildLabelData(item, customFields, labelTypeOverride) {
   return data;
 }
 
-module.exports = { RULES, detectLabelType, buildLabelData, isEmpty };
+// Zoho CRM's Products module is a completely different shape from
+// Inventory's items -- flat field API names, no custom_fields array -- so
+// it gets its own mapping rather than being forced through _RULES/
+// buildLabelData. Confirmed live against a real Diamonds-category record
+// (888045000009457101): Product_Code (not Product_Name) is the SKU per
+// explicit instruction, Measurement_mm uses "/" as its separator instead
+// of Inventory's "x" ("6.08/6.13/3.84" vs "7.13x6.76x4.39") -- normalized
+// to "x" here so ezplRenderer.js/pdfRenderer.js don't need to know which
+// source the data came from.
+const CRM_CATEGORY_MATCH = {
+  certified: ["diamond"],
+  jewellery: ["jewellery", "jewelry"],
+};
+
+function detectLabelTypeFromCrmProduct(product) {
+  const haystack = `${(product.Stock_Caregory || "").toLowerCase()} ${(product.Parent_Category || "").toLowerCase()} ${(product.Sub_Category || "").toLowerCase()}`;
+  for (const [labelType, substrings] of Object.entries(CRM_CATEGORY_MATCH)) {
+    if (substrings.some((s) => haystack.includes(s))) return labelType;
+  }
+  return null;
+}
+
+function buildLabelDataFromCrmProduct(product, labelTypeOverride) {
+  const labelType = labelTypeOverride || detectLabelTypeFromCrmProduct(product);
+  if (!labelType) {
+    throw new Error(
+      `Could not determine label type for CRM product ${product.id} ` +
+        `(Stock_Caregory=${product.Stock_Caregory}, Parent_Category=${product.Parent_Category}). ` +
+        `Pass label_type explicitly.`
+    );
+  }
+  return {
+    label_type: labelType,
+    sku: product.Product_Code || null,
+    growth_type: product.ProductType || null,
+    shape: product.Shape || null,
+    weight_ct: isEmpty(product.Carat_Units_IN) ? null : product.Carat_Units_IN,
+    colour: product.Colour || null,
+    clarity: product.Clarity || null,
+    measurements_mm: product.Measurement_mm ? String(product.Measurement_mm).replace(/\//g, "x") : null,
+    length_mm: isEmpty(product.Length_mm) ? null : product.Length_mm,
+    width_mm: isEmpty(product.Width_mm) ? null : product.Width_mm,
+    depth_mm: isEmpty(product.Depth_mm) ? null : product.Depth_mm,
+    certificate_no: product.Cert_No || null,
+    certificate_lab: product.LAB || null,
+  };
+}
+
+module.exports = {
+  RULES,
+  detectLabelType,
+  buildLabelData,
+  isEmpty,
+  detectLabelTypeFromCrmProduct,
+  buildLabelDataFromCrmProduct,
+};

@@ -9,15 +9,22 @@
 // earlier "res.status is not a function" crash.
 //
 // URL shape once deployed:
-//   GET /server/print_label_node?item_id=<id>              -> PDF, inline
-//   GET /server/print_label_node?item_id=<id>&format=ezpl   -> raw EZPL text
+//   GET /server/print_label_node?item_id=<id>                 -> PDF, inline (Zoho Inventory)
+//   GET /server/print_label_node?product_id=<id>               -> PDF, inline (Zoho CRM Products)
+//   GET /server/print_label_node?item_id=<id>&format=ezpl       -> raw EZPL text
+//
+// item_id and product_id are mutually exclusive -- pick whichever system
+// you're fetching from. The CRM path needs the refresh token to carry a
+// CRM scope (e.g. ZohoCRM.modules.products.READ) in addition to whatever
+// Inventory scopes it already has -- same token, both scopes.
 //
 // IMPORTANT: this function can fetch + render but cannot print. The GE330
 // is a local USB/network printer -- nothing running in Catalyst's cloud can
 // reach it. See catalyst/README.md for what's needed to close that gap.
 
-const { buildLabelData } = require("./labelData");
+const { buildLabelData, buildLabelDataFromCrmProduct } = require("./labelData");
 const { getItemWithFields } = require("./zohoClient");
+const { getProduct } = require("./zohoCrmClient");
 const { EZPL_RENDERERS } = require("./ezplRenderer");
 const { renderCertifiedPdf } = require("./pdfRenderer");
 
@@ -45,25 +52,27 @@ function getQuery(req) {
 module.exports = async (req, res) => {
   const query = getQuery(req);
   const itemId = query.item_id;
-  if (!itemId) {
-    send(res, 400, { "Content-Type": "text/plain" }, "Missing required query param: item_id");
+  const productId = query.product_id;
+  if (!itemId && !productId) {
+    send(res, 400, { "Content-Type": "text/plain" }, "Missing required query param: item_id or product_id");
     return;
   }
 
   const labelType = query.label_type || null;
   const format = (query.format || "pdf").toLowerCase();
+  const sourceLabel = productId ? `product_id=${productId}` : `item_id=${itemId}`;
 
   let data;
   try {
-    const { item, fields } = await getItemWithFields(itemId);
-    data = buildLabelData(item, fields, labelType);
+    if (productId) {
+      const product = await getProduct(productId);
+      data = buildLabelDataFromCrmProduct(product, labelType);
+    } else {
+      const { item, fields } = await getItemWithFields(itemId);
+      data = buildLabelData(item, fields, labelType);
+    }
   } catch (err) {
-    send(
-      res,
-      502,
-      { "Content-Type": "text/plain" },
-      `Could not fetch/build label for item_id=${itemId}: ${err.message}`
-    );
+    send(res, 502, { "Content-Type": "text/plain" }, `Could not fetch/build label for ${sourceLabel}: ${err.message}`);
     return;
   }
 
@@ -85,7 +94,7 @@ module.exports = async (req, res) => {
       200,
       {
         "Content-Type": "text/plain; charset=utf-8",
-        "Content-Disposition": `inline; filename="${data.sku || itemId}.ezpl"`,
+        "Content-Disposition": `inline; filename="${data.sku || sourceLabel}.ezpl"`,
       },
       ezplText
     );
@@ -108,7 +117,7 @@ module.exports = async (req, res) => {
     200,
     {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${data.sku || itemId}.pdf"`,
+      "Content-Disposition": `inline; filename="${data.sku || sourceLabel}.pdf"`,
     },
     pdfBuffer
   );
