@@ -46,7 +46,7 @@ async function renderCertifiedPdf(data) {
     .lineWidth(0.5) // points, matches reportlab's setLineWidth(0.5) in the Python renderer
     .stroke("black");
 
-  function draw(key, text, bold) {
+  function draw(key, text, bold = true) {
     const [x, yTop] = POSITIONS[key];
     const baselinePt = mm(yTop);
     const topPt = baselinePt - FONT_SIZE * HELVETICA_ASCENT;
@@ -63,8 +63,8 @@ async function renderCertifiedPdf(data) {
   const qrPng = await QRCode.toBuffer(sku || " ", { margin: 0, errorCorrectionLevel: "M" });
   doc.image(qrPng, mm(QR.x), mm(QR.top), { width: mm(QR.size), height: mm(QR.size) });
 
-  draw("sku", sku, true);
-  draw("growth", growthType, false);
+  draw("sku", sku);
+  draw("growth", growthType);
 
   const fieldRows = [
     ["shp", "Shp.", data.shape],
@@ -73,8 +73,8 @@ async function renderCertifiedPdf(data) {
     ["cla", "Cla", data.clarity],
   ];
   for (const [key, label, value] of fieldRows) {
-    draw(`${key}_label`, label, false);
-    if (!isEmpty(value)) draw(`${key}_value`, String(value), false);
+    draw(`${key}_label`, label);
+    if (!isEmpty(value)) draw(`${key}_value`, String(value));
   }
 
   const lab = data.certificate_lab || "GIA";
@@ -90,8 +90,8 @@ async function renderCertifiedPdf(data) {
     measLine = combined ? `${combined}mm` : null;
   }
 
-  if (giaLine) draw("gia", giaLine, false);
-  if (measLine) draw("meas", measLine, false);
+  if (giaLine) draw("gia", giaLine);
+  if (measLine) draw("meas", measLine);
 
   doc.end();
   return done;

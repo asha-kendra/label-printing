@@ -150,7 +150,7 @@ def render_certified_simple(c, data, width_mm, height_mm):
     def to_bottom(y_from_top):
         return height_mm - y_from_top
 
-    def draw(key, text, font=FONT):
+    def draw(key, text, font=FONT_BOLD):
         x, y = positions[key]
         c.setFont(font, font_size)
         c.drawString(x * mm, to_bottom(y) * mm, text)
@@ -160,7 +160,7 @@ def render_certified_simple(c, data, width_mm, height_mm):
 
     _draw_qr(c, sku, qr_x, to_bottom(qr_top) - qr_size, size_mm=qr_size)
 
-    draw("sku", sku, FONT_BOLD)
+    draw("sku", sku)
     draw("growth", growth_type)
 
     field_rows = [
