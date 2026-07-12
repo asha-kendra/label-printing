@@ -113,6 +113,7 @@ function buildLabelData(item, customFields, labelTypeOverride) {
 const CRM_CATEGORY_MATCH = {
   certified: ["diamond"],
   jewellery: ["jewellery", "jewelry"],
+  parcel: ["parcel"],
 };
 
 function detectLabelTypeFromCrmProduct(product) {
@@ -146,6 +147,7 @@ function buildLabelDataFromCrmProduct(product, labelTypeOverride) {
     depth_mm: isEmpty(product.Depth_mm) ? null : product.Depth_mm,
     certificate_no: product.Cert_No || null,
     certificate_lab: product.LAB || null,
+    mm_size: product.mm_size || null,
   };
 }
 

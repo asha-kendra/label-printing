@@ -18,19 +18,52 @@ const VALUE_X = 9.0;
 const RIGHT_X = 17.0;
 const FONT_SIZE = 4.0; // pt, uniform across every line on purpose
 
-const POSITIONS = {
-  sku: [LEFT_X, 3.5],
-  growth: [LEFT_X, 5.7],
-  shp_label: [LEFT_X, 9.0], shp_value: [VALUE_X, 9.0],
-  wt_label: [LEFT_X, 11.6], wt_value: [VALUE_X, 11.6],
-  col_label: [LEFT_X, 13.9], col_value: [VALUE_X, 13.9],
-  cla_label: [LEFT_X, 16.1], cla_value: [VALUE_X, 16.1],
-  gia: [RIGHT_X, 13.5],
-  meas: [RIGHT_X, 16.1],
-};
+const SKU_Y = 3.5;
+const GROWTH_Y = 5.7;
+const GIA_Y = 13.5;
+const MEAS_Y = 16.1;
 const QR = { x: RIGHT_X, top: 2.2, size: 8.8 };
 
-async function renderCertifiedPdf(data) {
+// Field-list row y-positions -- top and bottom anchors (9.0, 16.1) stay
+// fixed regardless of row count so the field list always starts level
+// with the header gap and ends level with the GIA/measurements column;
+// rows in between are spaced evenly. Certified's 4-row spacing here
+// (9.0/11.6/13.9/16.1) is the exact hand-tuned values confirmed earlier --
+// not a re-derived formula -- so certified's positions never shift.
+const FIELD_ROW_Y = {
+  4: [9.0, 11.6, 13.9, 16.1],
+  5: [9.0, 10.775, 12.55, 14.325, 16.1],
+};
+
+// label_type -> which field rows it shows, in order. "size" pulls from
+// data.mm_size -- a real Zoho CRM Products field, confirmed live.
+const FIELD_ROWS_BY_TYPE = {
+  certified: [
+    ["shp", "Shp.", (d) => d.shape],
+    ["wt", "Wt", (d) => (!isEmpty(d.weight_ct) ? `${d.weight_ct} ct` : null)],
+    ["col", "Col", (d) => d.colour],
+    ["cla", "Cla", (d) => d.clarity],
+  ],
+  parcel: [
+    ["shp", "Shp.", (d) => d.shape],
+    ["wt", "Wt", (d) => (!isEmpty(d.weight_ct) ? `${d.weight_ct} ct` : null)],
+    ["col", "Col", (d) => d.colour],
+    ["cla", "Cla", (d) => d.clarity],
+    ["size", "Size", (d) => (!isEmpty(d.mm_size) ? `${d.mm_size}mm` : null)],
+  ],
+};
+
+function measurementsLine(data) {
+  if (!isEmpty(data.measurements_mm)) {
+    return `${String(data.measurements_mm).replace(/x/g, "×")}mm`;
+  }
+  const dims = [data.length_mm, data.width_mm].filter((v) => !isEmpty(v)).join("-");
+  let combined = dims;
+  if (!isEmpty(data.depth_mm)) combined = dims ? `${dims}×${data.depth_mm}` : String(data.depth_mm);
+  return combined ? `${combined}mm` : null;
+}
+
+async function renderLabelPdf(data) {
   const widthMm = Number(process.env.LABEL_WIDTH_MM || 30);
   const heightMm = Number(process.env.LABEL_HEIGHT_MM || 19);
 
@@ -46,8 +79,7 @@ async function renderCertifiedPdf(data) {
     .lineWidth(0.5) // points, matches reportlab's setLineWidth(0.5) in the Python renderer
     .stroke("black");
 
-  function draw(key, text, bold = true) {
-    const [x, yTop] = POSITIONS[key];
+  function drawAt(x, yTop, text, bold = true) {
     const baselinePt = mm(yTop);
     const topPt = baselinePt - FONT_SIZE * HELVETICA_ASCENT;
     doc
@@ -59,42 +91,30 @@ async function renderCertifiedPdf(data) {
   const sku = data.sku || "";
   const growthType = data.growth_type || "Natural";
 
-  // QR
   const qrPng = await QRCode.toBuffer(sku || " ", { margin: 0, errorCorrectionLevel: "M" });
   doc.image(qrPng, mm(QR.x), mm(QR.top), { width: mm(QR.size), height: mm(QR.size) });
 
-  draw("sku", sku);
-  draw("growth", growthType);
+  drawAt(LEFT_X, SKU_Y, sku);
+  drawAt(LEFT_X, GROWTH_Y, growthType);
 
-  const fieldRows = [
-    ["shp", "Shp.", data.shape],
-    ["wt", "Wt", !isEmpty(data.weight_ct) ? `${data.weight_ct} ct` : null],
-    ["col", "Col", data.colour],
-    ["cla", "Cla", data.clarity],
-  ];
-  for (const [key, label, value] of fieldRows) {
-    draw(`${key}_label`, label);
-    if (!isEmpty(value)) draw(`${key}_value`, String(value));
-  }
+  const fieldRows = FIELD_ROWS_BY_TYPE[data.label_type] || FIELD_ROWS_BY_TYPE.certified;
+  const rowYs = FIELD_ROW_Y[fieldRows.length];
+  fieldRows.forEach(([, label, getValue], i) => {
+    const y = rowYs[i];
+    drawAt(LEFT_X, y, label);
+    const value = getValue(data);
+    if (!isEmpty(value)) drawAt(VALUE_X, y, String(value));
+  });
 
   const lab = data.certificate_lab || "GIA";
   const giaLine = !isEmpty(data.certificate_no) ? `${lab}-${data.certificate_no}` : null;
+  const measLine = measurementsLine(data);
 
-  let measLine;
-  if (!isEmpty(data.measurements_mm)) {
-    measLine = `${String(data.measurements_mm).replace(/x/g, "×")}mm`;
-  } else {
-    const dims = [data.length_mm, data.width_mm].filter((v) => !isEmpty(v)).join("-");
-    let combined = dims;
-    if (!isEmpty(data.depth_mm)) combined = dims ? `${dims}×${data.depth_mm}` : String(data.depth_mm);
-    measLine = combined ? `${combined}mm` : null;
-  }
-
-  if (giaLine) draw("gia", giaLine);
-  if (measLine) draw("meas", measLine);
+  if (giaLine) drawAt(RIGHT_X, GIA_Y, giaLine);
+  if (measLine) drawAt(RIGHT_X, MEAS_Y, measLine);
 
   doc.end();
   return done;
 }
 
-module.exports = { renderCertifiedPdf };
+module.exports = { renderLabelPdf, renderCertifiedPdf: renderLabelPdf };

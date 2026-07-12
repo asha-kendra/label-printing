@@ -26,7 +26,9 @@ const { buildLabelData, buildLabelDataFromCrmProduct } = require("./labelData");
 const { getItemWithFields } = require("./zohoClient");
 const { getProduct } = require("./zohoCrmClient");
 const { EZPL_RENDERERS } = require("./ezplRenderer");
-const { renderCertifiedPdf } = require("./pdfRenderer");
+const { renderLabelPdf } = require("./pdfRenderer");
+
+const PDF_LABEL_TYPES = ["certified", "parcel"];
 
 function send(res, status, headers, body) {
   res.statusCode = status;
@@ -101,17 +103,17 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (data.label_type !== "certified") {
+  if (!PDF_LABEL_TYPES.includes(data.label_type)) {
     send(
       res,
       501,
       { "Content-Type": "text/plain" },
-      `PDF rendering is only wired up for label_type=certified so far, got ${data.label_type}.`
+      `PDF rendering is only wired up for label_type in [${PDF_LABEL_TYPES.join(", ")}] so far, got ${data.label_type}.`
     );
     return;
   }
 
-  const pdfBuffer = await renderCertifiedPdf(data);
+  const pdfBuffer = await renderLabelPdf(data);
   send(
     res,
     200,
