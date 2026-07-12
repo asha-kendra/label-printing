@@ -28,7 +28,7 @@ const { getProduct } = require("./zohoCrmClient");
 const { EZPL_RENDERERS } = require("./ezplRenderer");
 const { renderLabelPdf } = require("./pdfRenderer");
 
-const PDF_LABEL_TYPES = ["certified", "parcel"];
+const PDF_LABEL_TYPES = ["certified", "uncertified", "parcel"];
 
 function send(res, status, headers, body) {
   res.statusCode = status;

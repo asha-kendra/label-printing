@@ -111,11 +111,13 @@ function buildLabelData(item, customFields, labelTypeOverride) {
 // to "x" here so ezplRenderer.js/pdfRenderer.js don't need to know which
 // source the data came from.
 // Keyed off Stock_Caregory specifically (that field's own value, not
-// Parent_Category/Sub_Category) -- "Uncertified" diamonds use the exact
-// same certified template; the GIA line just stays blank since there's
-// no Cert_No to show, which the renderer already handles on its own.
+// Parent_Category/Sub_Category). "uncertified" is its own label_type, not
+// an alias for "certified": it uses the identical layout, but always
+// shows mm_size in the GIA row and never the lab/cert number, even if
+// the record happens to have cert data -- see pdfRenderer.js.
 const CRM_CATEGORY_MATCH = {
-  certified: ["diamond", "uncertified"],
+  certified: ["diamond"],
+  uncertified: ["uncertified"],
   jewellery: ["jewellery", "jewelry"],
   parcel: ["parcel"],
 };

@@ -37,13 +37,16 @@ const FIELD_ROW_Y = {
 
 // label_type -> which field rows it shows, in order. "size" pulls from
 // data.mm_size -- a real Zoho CRM Products field, confirmed live.
+const CERTIFIED_FIELD_ROWS = [
+  ["shp", "Shp.", (d) => d.shape],
+  ["wt", "Wt", (d) => (!isEmpty(d.weight_ct) ? `${d.weight_ct} ct` : null)],
+  ["col", "Col", (d) => d.colour],
+  ["cla", "Cla", (d) => d.clarity],
+];
+
 const FIELD_ROWS_BY_TYPE = {
-  certified: [
-    ["shp", "Shp.", (d) => d.shape],
-    ["wt", "Wt", (d) => (!isEmpty(d.weight_ct) ? `${d.weight_ct} ct` : null)],
-    ["col", "Col", (d) => d.colour],
-    ["cla", "Cla", (d) => d.clarity],
-  ],
+  certified: CERTIFIED_FIELD_ROWS,
+  uncertified: CERTIFIED_FIELD_ROWS,
   parcel: [
     ["shp", "Shp.", (d) => d.shape],
     ["wt", "Wt", (d) => (!isEmpty(d.weight_ct) ? `${d.weight_ct} ct` : null)],
@@ -107,14 +110,21 @@ async function renderLabelPdf(data) {
   });
 
   const lab = data.certificate_lab || "GIA";
-  // Uncertified stones have no Cert_No -- show mm_size in that same slot
-  // instead of leaving it blank, rather than the combined L/W/D
-  // measurements line (that stays on its own row below regardless).
-  const giaLine = !isEmpty(data.certificate_no)
-    ? `${lab}-${data.certificate_no}`
-    : !isEmpty(data.mm_size)
-      ? `${data.mm_size}mm`
-      : null;
+  // label_type=uncertified always shows mm_size here and never the
+  // cert line, even if the record happens to have one -- deliberately
+  // unconditional, per instruction ("if its there also dont display").
+  // Other types show the cert if present, falling back to mm_size only
+  // when there's genuinely no cert data.
+  let giaLine;
+  if (data.label_type === "uncertified") {
+    giaLine = !isEmpty(data.mm_size) ? `${data.mm_size}mm` : null;
+  } else {
+    giaLine = !isEmpty(data.certificate_no)
+      ? `${lab}-${data.certificate_no}`
+      : !isEmpty(data.mm_size)
+        ? `${data.mm_size}mm`
+        : null;
+  }
   const measLine = measurementsLine(data);
 
   if (giaLine) drawAt(RIGHT_X, GIA_Y, giaLine);
