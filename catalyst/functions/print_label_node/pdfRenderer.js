@@ -107,7 +107,14 @@ async function renderLabelPdf(data) {
   });
 
   const lab = data.certificate_lab || "GIA";
-  const giaLine = !isEmpty(data.certificate_no) ? `${lab}-${data.certificate_no}` : null;
+  // Uncertified stones have no Cert_No -- show mm_size in that same slot
+  // instead of leaving it blank, rather than the combined L/W/D
+  // measurements line (that stays on its own row below regardless).
+  const giaLine = !isEmpty(data.certificate_no)
+    ? `${lab}-${data.certificate_no}`
+    : !isEmpty(data.mm_size)
+      ? `${data.mm_size}mm`
+      : null;
   const measLine = measurementsLine(data);
 
   if (giaLine) drawAt(RIGHT_X, GIA_Y, giaLine);
