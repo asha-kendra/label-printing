@@ -110,16 +110,20 @@ function buildLabelData(item, customFields, labelTypeOverride) {
 // of Inventory's "x" ("6.08/6.13/3.84" vs "7.13x6.76x4.39") -- normalized
 // to "x" here so ezplRenderer.js/pdfRenderer.js don't need to know which
 // source the data came from.
+// Keyed off Stock_Caregory specifically (that field's own value, not
+// Parent_Category/Sub_Category) -- "Uncertified" diamonds use the exact
+// same certified template; the GIA line just stays blank since there's
+// no Cert_No to show, which the renderer already handles on its own.
 const CRM_CATEGORY_MATCH = {
-  certified: ["diamond"],
+  certified: ["diamond", "uncertified"],
   jewellery: ["jewellery", "jewelry"],
   parcel: ["parcel"],
 };
 
 function detectLabelTypeFromCrmProduct(product) {
-  const haystack = `${(product.Stock_Caregory || "").toLowerCase()} ${(product.Parent_Category || "").toLowerCase()} ${(product.Sub_Category || "").toLowerCase()}`;
+  const stockCategory = (product.Stock_Caregory || "").toLowerCase();
   for (const [labelType, substrings] of Object.entries(CRM_CATEGORY_MATCH)) {
-    if (substrings.some((s) => haystack.includes(s))) return labelType;
+    if (substrings.some((s) => stockCategory.includes(s))) return labelType;
   }
   return null;
 }
