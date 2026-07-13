@@ -131,8 +131,9 @@ async function renderLabelPdf(data) {
   });
 
   // This row never shows the cert number/lab, for any label_type --
-  // mm_size is displayed here instead, unconditionally.
-  const giaLine = !isEmpty(data.mm_size) ? `${data.mm_size}mm` : null;
+  // mm_size is displayed here instead, unconditionally, labelled "Size"
+  // so a bare number doesn't read as unexplained.
+  const giaLine = !isEmpty(data.mm_size) ? `Size ${data.mm_size}mm` : null;
   const measLine = measurementsLine(data);
   // Right edge of the printable area: label width minus the border inset
   // (0.5mm) and a little clearance so bold text never touches the border.
