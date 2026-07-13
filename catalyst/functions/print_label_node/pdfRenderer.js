@@ -130,22 +130,9 @@ async function renderLabelPdf(data) {
     if (!isEmpty(value)) drawAt(VALUE_X, y, String(value));
   });
 
-  const lab = data.certificate_lab || "GIA";
-  // label_type=uncertified always shows mm_size here and never the
-  // cert line, even if the record happens to have one -- deliberately
-  // unconditional, per instruction ("if its there also dont display").
-  // Other types show the cert if present, falling back to mm_size only
-  // when there's genuinely no cert data.
-  let giaLine;
-  if (data.label_type === "uncertified") {
-    giaLine = !isEmpty(data.mm_size) ? `${data.mm_size}mm` : null;
-  } else {
-    giaLine = !isEmpty(data.certificate_no)
-      ? `${lab}-${data.certificate_no}`
-      : !isEmpty(data.mm_size)
-        ? `${data.mm_size}mm`
-        : null;
-  }
+  // This row never shows the cert number/lab, for any label_type --
+  // mm_size is displayed here instead, unconditionally.
+  const giaLine = !isEmpty(data.mm_size) ? `${data.mm_size}mm` : null;
   const measLine = measurementsLine(data);
   // Right edge of the printable area: label width minus the border inset
   // (0.5mm) and a little clearance so bold text never touches the border.
