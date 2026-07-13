@@ -82,13 +82,34 @@ async function renderLabelPdf(data) {
     .lineWidth(0.5) // points, matches reportlab's setLineWidth(0.5) in the Python renderer
     .stroke("black");
 
-  function drawAt(x, yTop, text, bold = true) {
+  // maxWidthMm is for the RIGHT_X column only: bold glyphs at the fixed
+  // FONT_SIZE run wider than regular weight, and long measurement strings
+  // ("11.59×7.95×5.14mm") were measured overflowing the label's right edge.
+  // Rather than shrinking the font (font size must stay uniform across
+  // every line, per rule), squeeze that one string horizontally -- same
+  // idea as EZPL's own separate h-mult/v-mult text multipliers, just
+  // applied here as a PDF-space horizontal scale so the cap height (and
+  // therefore "font size") is untouched.
+  function drawAt(x, yTop, text, { bold = true, maxWidthMm = null } = {}) {
+    const font = bold ? "Helvetica-Bold" : "Helvetica";
+    doc.font(font).fontSize(FONT_SIZE);
     const baselinePt = mm(yTop);
     const topPt = baselinePt - FONT_SIZE * HELVETICA_ASCENT;
-    doc
-      .font(bold ? "Helvetica-Bold" : "Helvetica")
-      .fontSize(FONT_SIZE)
-      .text(text, mm(x), topPt, { lineBreak: false });
+    const xPt = mm(x);
+    if (maxWidthMm != null) {
+      const textWidthPt = doc.widthOfString(text);
+      const maxWidthPt = mm(maxWidthMm);
+      if (textWidthPt > maxWidthPt) {
+        const scaleX = maxWidthPt / textWidthPt;
+        doc.save();
+        doc.translate(xPt, topPt);
+        doc.scale(scaleX, 1);
+        doc.text(text, 0, 0, { lineBreak: false });
+        doc.restore();
+        return;
+      }
+    }
+    doc.text(text, xPt, topPt, { lineBreak: false });
   }
 
   const sku = data.sku || "";
@@ -126,9 +147,12 @@ async function renderLabelPdf(data) {
         : null;
   }
   const measLine = measurementsLine(data);
+  // Right edge of the printable area: label width minus the border inset
+  // (0.5mm) and a little clearance so bold text never touches the border.
+  const rightColumnMaxWidthMm = widthMm - RIGHT_X - 1.5;
 
-  if (giaLine) drawAt(RIGHT_X, GIA_Y, giaLine);
-  if (measLine) drawAt(RIGHT_X, MEAS_Y, measLine);
+  if (giaLine) drawAt(RIGHT_X, GIA_Y, giaLine, { maxWidthMm: rightColumnMaxWidthMm });
+  if (measLine) drawAt(RIGHT_X, MEAS_Y, measLine, { maxWidthMm: rightColumnMaxWidthMm });
 
   doc.end();
   return done;
