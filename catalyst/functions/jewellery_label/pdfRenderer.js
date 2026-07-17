@@ -12,26 +12,26 @@ function mm(v) {
 // Flag-tag shape: a rectangular body with a triangular point on the right
 // edge (for threading onto a string/loop) -- reference photo showed a
 // long, thin tag divided by a vertical line into a QR/SKU box on the left
-// and a 4-line details box on the right. No confirmed physical size yet
-// (standard flag-tag size chosen as a first draft; adjust after preview).
-const BODY_WIDTH_MM = 42;
+// and a 4-line details box on the right. Confirmed physical size: 50mm x
+// 11mm overall -- split as a 40mm body + 10mm pointed tail.
+const BODY_WIDTH_MM = 40;
 const TAIL_LENGTH_MM = 10;
-const HEIGHT_MM = 10;
+const HEIGHT_MM = 11;
 const TOTAL_WIDTH_MM = BODY_WIDTH_MM + TAIL_LENGTH_MM;
 
-const DIVIDER_X_MM = 17;
-const QR = { x: 1.0, y: 1.0, size: 5.0 };
+const DIVIDER_X_MM = 16;
+const QR = { x: 1.0, y: 1.0, size: 5.5 };
 
-const SKU_FONT_SIZE = 3.4;
-const GROWTH_FONT_SIZE = 2.6;
-const DETAIL_FONT_SIZE = 2.5;
+const SKU_FONT_SIZE = 3.7;
+const GROWTH_FONT_SIZE = 2.9;
+const DETAIL_FONT_SIZE = 2.75;
 
 const LEFT_TEXT_X = QR.x + QR.size + 0.8;
-const SKU_Y = 3.0;
-const GROWTH_Y = 7.3;
+const SKU_Y = 3.3;
+const GROWTH_Y = 8.0;
 
 const RIGHT_TEXT_X = DIVIDER_X_MM + 1.2;
-const DETAIL_ROW_Y = [2.3, 4.6, 6.9, 9.2];
+const DETAIL_ROW_Y = [2.5, 5.0, 7.6, 10.1];
 const DETAIL_MAX_WIDTH_MM = BODY_WIDTH_MM - RIGHT_TEXT_X - 1.0;
 
 async function renderJewelleryLabelPdf(data) {
