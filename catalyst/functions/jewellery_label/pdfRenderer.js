@@ -17,12 +17,13 @@ const HALF_WIDTH_MM = 25;
 const HEIGHT_MM = 11;
 const TOTAL_WIDTH_MM = HALF_WIDTH_MM * 2;
 
-const QR = { x: 1.5, y: 1.5, size: 6.5 };
+// Hand-positioned via the layout-bench editor and confirmed by the user.
+const QR = { x: 2.6, y: 1.6, size: 6.5 };
 const SKU_FONT_SIZE = 4.0;
 const GROWTH_FONT_SIZE = 3.2;
-const LEFT_TEXT_X = QR.x + QR.size + 1.0;
-const SKU_Y = 4.2;
-const GROWTH_Y = 8.6;
+const LEFT_TEXT_X = 12.6;
+const SKU_Y = 3.8;
+const GROWTH_Y = 6.1;
 
 const DETAIL_FONT_SIZE = 3.0;
 const RIGHT_TEXT_X = HALF_WIDTH_MM + 1.5;
