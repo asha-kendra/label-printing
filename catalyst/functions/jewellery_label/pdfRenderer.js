@@ -9,30 +9,25 @@ function mm(v) {
   return v * MM;
 }
 
-// Flag-tag shape: a rectangular body with a triangular point on the right
-// edge (for threading onto a string/loop) -- reference photo showed a
-// long, thin tag divided by a vertical line into a QR/SKU box on the left
-// and a 4-line details box on the right. Confirmed physical size: 50mm x
-// 11mm overall -- split as a 40mm body + 10mm pointed tail.
-const BODY_WIDTH_MM = 40;
-const TAIL_LENGTH_MM = 10;
+// Foldable two-panel tag: two equal 25x11mm panels side by side (50x11mm
+// total), meant to be folded in half at the midpoint so the two panels
+// face each other/back each other around a string or loop. Left panel:
+// QR + SKU + ProductType. Right panel: the remaining details (4 lines).
+const HALF_WIDTH_MM = 25;
 const HEIGHT_MM = 11;
-const TOTAL_WIDTH_MM = BODY_WIDTH_MM + TAIL_LENGTH_MM;
+const TOTAL_WIDTH_MM = HALF_WIDTH_MM * 2;
 
-const DIVIDER_X_MM = 16;
-const QR = { x: 1.0, y: 1.0, size: 5.5 };
+const QR = { x: 1.5, y: 1.5, size: 6.5 };
+const SKU_FONT_SIZE = 4.0;
+const GROWTH_FONT_SIZE = 3.2;
+const LEFT_TEXT_X = QR.x + QR.size + 1.0;
+const SKU_Y = 4.2;
+const GROWTH_Y = 8.6;
 
-const SKU_FONT_SIZE = 3.7;
-const GROWTH_FONT_SIZE = 2.9;
-const DETAIL_FONT_SIZE = 2.75;
-
-const LEFT_TEXT_X = QR.x + QR.size + 0.8;
-const SKU_Y = 3.3;
-const GROWTH_Y = 8.0;
-
-const RIGHT_TEXT_X = DIVIDER_X_MM + 1.2;
-const DETAIL_ROW_Y = [2.5, 5.0, 7.6, 10.1];
-const DETAIL_MAX_WIDTH_MM = BODY_WIDTH_MM - RIGHT_TEXT_X - 1.0;
+const DETAIL_FONT_SIZE = 3.0;
+const RIGHT_TEXT_X = HALF_WIDTH_MM + 1.5;
+const DETAIL_ROW_Y = [2.4, 4.9, 7.4, 9.9];
+const DETAIL_MAX_WIDTH_MM = TOTAL_WIDTH_MM - RIGHT_TEXT_X - 1.0;
 
 async function renderJewelleryLabelPdf(data) {
   const doc = new PDFDocument({ size: [mm(TOTAL_WIDTH_MM), mm(HEIGHT_MM)], margin: 0 });
@@ -40,23 +35,17 @@ async function renderJewelleryLabelPdf(data) {
   doc.on("data", (c) => chunks.push(c));
   const done = new Promise((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
 
-  // Tag outline: rectangular body + a triangular point tapering to the tip.
-  doc
-    .moveTo(mm(0), mm(0))
-    .lineTo(mm(BODY_WIDTH_MM), mm(0))
-    .lineTo(mm(TOTAL_WIDTH_MM), mm(HEIGHT_MM / 2))
-    .lineTo(mm(BODY_WIDTH_MM), mm(HEIGHT_MM))
-    .lineTo(mm(0), mm(HEIGHT_MM))
-    .closePath()
-    .lineWidth(0.5)
-    .stroke("black");
+  // Outline around the full 50x11mm strip.
+  doc.rect(mm(0), mm(0), mm(TOTAL_WIDTH_MM), mm(HEIGHT_MM)).lineWidth(0.5).stroke("black");
 
-  // Divider between the QR/SKU box and the details box.
+  // Dashed fold line at the midpoint -- where the strip folds in half.
   doc
-    .moveTo(mm(DIVIDER_X_MM), mm(0.8))
-    .lineTo(mm(DIVIDER_X_MM), mm(HEIGHT_MM - 0.8))
+    .moveTo(mm(HALF_WIDTH_MM), mm(0))
+    .lineTo(mm(HALF_WIDTH_MM), mm(HEIGHT_MM))
+    .dash(1, { space: 0.8 })
     .lineWidth(0.3)
-    .stroke("black");
+    .stroke("black")
+    .undash();
 
   function drawAt(x, yTop, text, { fontSize = DETAIL_FONT_SIZE, maxWidthMm = null } = {}) {
     doc.font("Helvetica-Bold").fontSize(fontSize);
