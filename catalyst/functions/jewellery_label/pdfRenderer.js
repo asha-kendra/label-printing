@@ -18,14 +18,16 @@ const HEIGHT_MM = 11;
 const TOTAL_WIDTH_MM = HALF_WIDTH_MM * 2;
 
 // Hand-positioned via the layout-bench editor and confirmed by the user.
+// SKU is bold; ProductType (growth type) is deliberately not bold, to
+// stand apart from the SKU despite being the same size.
 const QR = { x: 2.6, y: 1.6, size: 7.4 };
-const SKU_FONT_SIZE = 4.6;
-const GROWTH_FONT_SIZE = 3.7;
+const SKU_FONT_SIZE = 6.0;
+const GROWTH_FONT_SIZE = 6.0;
 const LEFT_TEXT_X = 12.6;
 const SKU_Y = 3.8;
 const GROWTH_Y = 6.1;
 
-const DETAIL_FONT_SIZE = 3.5;
+const DETAIL_FONT_SIZE = 4.5;
 const RIGHT_TEXT_X = HALF_WIDTH_MM + 1.5;
 const DETAIL_ROW_Y = [2.4, 4.9, 7.4, 9.9];
 const DETAIL_MAX_WIDTH_MM = TOTAL_WIDTH_MM - RIGHT_TEXT_X - 1.0;
@@ -48,8 +50,8 @@ async function renderJewelleryLabelPdf(data) {
     .stroke("black")
     .undash();
 
-  function drawAt(x, yTop, text, { fontSize = DETAIL_FONT_SIZE, maxWidthMm = null } = {}) {
-    doc.font("Helvetica-Bold").fontSize(fontSize);
+  function drawAt(x, yTop, text, { fontSize = DETAIL_FONT_SIZE, bold = true, maxWidthMm = null } = {}) {
+    doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(fontSize);
     const baselinePt = mm(yTop);
     const topPt = baselinePt - fontSize * HELVETICA_ASCENT;
     const xPt = mm(x);
@@ -73,7 +75,7 @@ async function renderJewelleryLabelPdf(data) {
   doc.image(qrPng, mm(QR.x), mm(QR.y), { width: mm(QR.size), height: mm(QR.size) });
 
   if (!isEmpty(data.sku)) drawAt(LEFT_TEXT_X, SKU_Y, data.sku, { fontSize: SKU_FONT_SIZE });
-  if (!isEmpty(data.growth_type)) drawAt(LEFT_TEXT_X, GROWTH_Y, data.growth_type, { fontSize: GROWTH_FONT_SIZE });
+  if (!isEmpty(data.growth_type)) drawAt(LEFT_TEXT_X, GROWTH_Y, data.growth_type, { fontSize: GROWTH_FONT_SIZE, bold: false });
 
   const line1 =
     !isEmpty(data.parent_category) || !isEmpty(data.carat_in)
