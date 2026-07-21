@@ -77,21 +77,10 @@ async function renderJewelleryLabelPdf(data) {
   if (!isEmpty(data.sku)) drawAt(LEFT_TEXT_X, SKU_Y, data.sku, { fontSize: SKU_FONT_SIZE });
   if (!isEmpty(data.growth_type)) drawAt(LEFT_TEXT_X, GROWTH_Y, data.growth_type, { fontSize: GROWTH_FONT_SIZE, bold: false });
 
-  const line1 =
-    !isEmpty(data.parent_category) || !isEmpty(data.carat_in)
-      ? [data.parent_category, !isEmpty(data.carat_in) ? `${data.carat_in} ct` : null].filter(Boolean).join(" - ")
-      : null;
-  const line2 = !isEmpty(data.sub_category) ? data.sub_category : null;
+  const line1 = [data.parent_category, data.diamond_shape].filter((v) => !isEmpty(v)).join(" - ") || null;
+  const line2 = [data.sub_category, data.total_diamond_weight].filter((v) => !isEmpty(v)).join(" - ") || null;
   const line3 = [data.metal_type, data.metal_purity].filter((v) => !isEmpty(v)).join(" ") || null;
-  const line4 =
-    !isEmpty(data.total_diamond_weight) || !isEmpty(data.ring_size)
-      ? [
-          !isEmpty(data.total_diamond_weight) ? `${data.total_diamond_weight} gms` : null,
-          !isEmpty(data.ring_size) ? `Ring Size: ${data.ring_size}` : null,
-        ]
-          .filter(Boolean)
-          .join(" | ")
-      : null;
+  const line4 = [data.metal_weight, data.ring_size].filter((v) => !isEmpty(v)).join(" - ") || null;
 
   [line1, line2, line3, line4].forEach((line, i) => {
     if (line) drawAt(RIGHT_TEXT_X, DETAIL_ROW_Y[i], line, { maxWidthMm: DETAIL_MAX_WIDTH_MM });

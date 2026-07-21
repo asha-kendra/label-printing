@@ -16,11 +16,12 @@ function buildLabelDataFromCrmProduct(product) {
     sku: product.Product_Code || null,
     growth_type: product.ProductType || null,
     parent_category: product.Parent_Category || null,
-    carat_in: isEmpty(product.Carat_Units_IN) ? null : product.Carat_Units_IN,
+    diamond_shape: product.Diamond_Shape_s || null,
     sub_category: product.Sub_Category || null,
+    total_diamond_weight: isEmpty(product.Total_Diamond_Weight) ? null : product.Total_Diamond_Weight,
     metal_type: product.Metal_Colour || null,
     metal_purity: product.Metal_Purity || null,
-    total_diamond_weight: isEmpty(product.Total_Diamond_Weight) ? null : product.Total_Diamond_Weight,
+    metal_weight: isEmpty(product.Metal_Weight) ? null : product.Metal_Weight,
     ring_size: product.Size || null,
   };
 }
