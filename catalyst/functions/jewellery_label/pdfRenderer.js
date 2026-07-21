@@ -78,8 +78,8 @@ async function renderJewelleryLabelPdf(data) {
   const line2 = [data.diamond_shape, data.metal_type, data.metal_purity].filter((v) => !isEmpty(v)).join(" ") || null;
   const line3 =
     [
-      !isEmpty(data.total_diamond_weight) ? `TDW: ${data.total_diamond_weight}` : null,
-      !isEmpty(data.center_diamond_weight) ? `CDW: ${data.center_diamond_weight}` : null,
+      !isEmpty(data.total_diamond_weight) ? `TDW: ${data.total_diamond_weight}ct` : null,
+      !isEmpty(data.center_diamond_weight) ? `CDW: ${data.center_diamond_weight}ct` : null,
     ]
       .filter(Boolean)
       .join("  ") || null;
