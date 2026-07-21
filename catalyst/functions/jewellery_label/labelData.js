@@ -19,6 +19,7 @@ function buildLabelDataFromCrmProduct(product) {
     diamond_shape: product.Shape || null,
     sub_category: product.Sub_Category || null,
     total_diamond_weight: isEmpty(product.Total_Diamond_Weight) ? null : product.Total_Diamond_Weight,
+    center_diamond_weight: isEmpty(product.Centre_Diamond_Weight) ? null : product.Centre_Diamond_Weight,
     metal_type: product.Metal_Colour || null,
     metal_purity: product.Metal_Purity || null,
     metal_weight: isEmpty(product.Metal_Weight) ? null : product.Metal_Weight,

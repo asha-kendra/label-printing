@@ -38,9 +38,6 @@ async function renderJewelleryLabelPdf(data) {
   doc.on("data", (c) => chunks.push(c));
   const done = new Promise((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
 
-  // Outline around the full 50x11mm strip.
-  doc.rect(mm(0), mm(0), mm(TOTAL_WIDTH_MM), mm(HEIGHT_MM)).lineWidth(0.5).stroke("black");
-
   // Dashed fold line at the midpoint -- where the strip folds in half.
   doc
     .moveTo(mm(HALF_WIDTH_MM), mm(0))
@@ -77,10 +74,22 @@ async function renderJewelleryLabelPdf(data) {
   if (!isEmpty(data.sku)) drawAt(LEFT_TEXT_X, SKU_Y, data.sku, { fontSize: SKU_FONT_SIZE });
   if (!isEmpty(data.growth_type)) drawAt(LEFT_TEXT_X, GROWTH_Y, data.growth_type, { fontSize: GROWTH_FONT_SIZE, bold: false });
 
-  const line1 = [data.parent_category, data.diamond_shape].filter((v) => !isEmpty(v)).join(" - ") || null;
-  const line2 = [data.sub_category, data.total_diamond_weight].filter((v) => !isEmpty(v)).join(" - ") || null;
-  const line3 = [data.metal_type, data.metal_purity].filter((v) => !isEmpty(v)).join(" ") || null;
-  const line4 = [data.metal_weight, data.ring_size].filter((v) => !isEmpty(v)).join(" - ") || null;
+  const line1 = [data.parent_category, data.sub_category].filter((v) => !isEmpty(v)).join(" - ") || null;
+  const line2 = [data.diamond_shape, data.metal_type, data.metal_purity].filter((v) => !isEmpty(v)).join(" ") || null;
+  const line3 =
+    [
+      !isEmpty(data.total_diamond_weight) ? `TDW: ${data.total_diamond_weight}` : null,
+      !isEmpty(data.center_diamond_weight) ? `CDW: ${data.center_diamond_weight}` : null,
+    ]
+      .filter(Boolean)
+      .join("  ") || null;
+  const line4 =
+    [
+      !isEmpty(data.metal_weight) ? `${data.metal_weight} gms` : null,
+      !isEmpty(data.ring_size) ? `Size: ${data.ring_size}` : null,
+    ]
+      .filter(Boolean)
+      .join("  ") || null;
 
   [line1, line2, line3, line4].forEach((line, i) => {
     if (line) drawAt(RIGHT_TEXT_X, DETAIL_ROW_Y[i], line, { maxWidthMm: DETAIL_MAX_WIDTH_MM });
