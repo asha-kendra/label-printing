@@ -16,7 +16,7 @@ function buildLabelDataFromCrmProduct(product) {
     sku: product.Product_Code || null,
     growth_type: product.ProductType || null,
     parent_category: product.Parent_Category || null,
-    diamond_shape: product.Diamond_Shape_s || null,
+    diamond_shape: product.Shape || null,
     sub_category: product.Sub_Category || null,
     total_diamond_weight: isEmpty(product.Total_Diamond_Weight) ? null : product.Total_Diamond_Weight,
     metal_type: product.Metal_Colour || null,
