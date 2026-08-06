@@ -9,12 +9,15 @@ function mm(v) {
   return v * MM;
 }
 
-// Large-format diamond/parcel label: same layout language as the
-// 30x19mm certified/uncertified/parcel labels (print_label_node,
-// certified_diamond_label), just scaled up to a 65x31mm label stock.
-// Coordinates below are the original 30x19mm hand-tuned values scaled
-// by width (65/30) and height (31/19) respectively -- not re-derived
-// from scratch -- so the layout reads as the same design, just bigger.
+// Large-format label for certified diamonds and parcels only (see
+// labelData.js for the detection rule -- an Uncertified-category record
+// only reaches this renderer as label_type=parcel, when its
+// Stock_Sub_Category is Parcel). Same layout language as the 30x19mm
+// labels (print_label_node, certified_diamond_label), just scaled up to
+// a 65x31mm label stock. Coordinates below are the original 30x19mm
+// hand-tuned values scaled by width (65/30) and height (31/19)
+// respectively -- not re-derived from scratch -- so the layout reads as
+// the same design, just bigger.
 const LEFT_X = 4.3;
 const VALUE_X = 19.5;
 const RIGHT_X = 36.8;
@@ -43,7 +46,6 @@ const CERTIFIED_FIELD_ROWS = [
 
 const FIELD_ROWS_BY_TYPE = {
   certified: CERTIFIED_FIELD_ROWS,
-  uncertified: CERTIFIED_FIELD_ROWS,
   parcel: [
     ...CERTIFIED_FIELD_ROWS,
     ["size", "Size", (d) => (!isEmpty(d.mm_size) ? `${d.mm_size}mm` : null)],
@@ -116,9 +118,7 @@ async function renderLargeLabelPdf(data) {
   });
 
   // Certified diamonds always show the lab + certificate number here.
-  // Uncertified diamonds and parcels never show cert info -- they show
-  // mm_size instead, even if the record happens to carry cert data
-  // (matches certified_diamond_label / print_label_node respectively).
+  // Parcels never show cert info -- mm_size instead, unconditionally.
   const lab = data.certificate_lab || "GIA";
   const giaLine =
     data.label_type === "certified"

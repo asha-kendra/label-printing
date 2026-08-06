@@ -110,22 +110,21 @@ function buildLabelData(item, customFields, labelTypeOverride) {
 // of Inventory's "x" ("6.08/6.13/3.84" vs "7.13x6.76x4.39") -- normalized
 // to "x" here so ezplRenderer.js/pdfRenderer.js don't need to know which
 // source the data came from.
-// Keyed off Stock_Caregory specifically (that field's own value, not
-// Parent_Category/Sub_Category). "uncertified" is its own label_type, not
-// an alias for "certified": it uses the identical layout, but always
-// shows mm_size in the GIA row and never the lab/cert number, even if
-// the record happens to have cert data -- see pdfRenderer.js.
-const CRM_CATEGORY_MATCH = {
-  certified: ["diamond"],
-  uncertified: ["uncertified"],
-  jewellery: ["jewellery", "jewelry"],
-  parcel: ["parcel"],
-};
-
+// This script only handles two label types: certified and parcel --
+// there is no separate "uncertified individual stone" label here.
+// Certified is Stock_Caregory containing "diamond". Parcel is either
+// Stock_Caregory containing "parcel" directly, OR Stock_Caregory=
+// "Uncertified" with Stock_Sub_Category="Parcel" -- per instruction,
+// an Uncertified-category record is only in scope for this script when
+// its sub-category marks it as a parcel; a lone Uncertified stone
+// (Stock_Sub_Category="Single Item" etc.) is out of scope and returns
+// null, same as any other unsupported category.
 function detectLabelTypeFromCrmProduct(product) {
   const stockCategory = (product.Stock_Caregory || "").toLowerCase();
-  for (const [labelType, substrings] of Object.entries(CRM_CATEGORY_MATCH)) {
-    if (substrings.some((s) => stockCategory.includes(s))) return labelType;
+  const subCategory = (product.Stock_Sub_Category || "").toLowerCase();
+  if (stockCategory.includes("diamond")) return "certified";
+  if (stockCategory.includes("parcel") || (stockCategory.includes("uncertified") && subCategory.includes("parcel"))) {
+    return "parcel";
   }
   return null;
 }

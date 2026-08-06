@@ -1,7 +1,10 @@
 // Catalyst Advanced I/O function (Node.js): large-format (65x31mm) label
-// for certified diamonds, uncertified diamonds, and parcels. One script,
-// dispatching to a different display for certified vs uncertified/parcel
-// stock -- see pdfRenderer.js for the certified vs mm_size branch.
+// for certified diamonds and parcels. One script -- certified diamonds
+// show LAB-CertNo, parcels show mm_size instead. There is no separate
+// "uncertified" individual-stone label here: an Uncertified-category
+// record only renders if its Stock_Sub_Category is Parcel (see
+// detectLabelTypeFromCrmProduct in labelData.js) -- anything else
+// Uncertified is out of scope for this script.
 //
 // URL shape once deployed:
 //   GET /server/large_diamond_parcel_label?item_id=<id>       -> PDF, inline (Zoho Inventory)
@@ -12,7 +15,7 @@ const { getItemWithFields } = require("./zohoClient");
 const { getProduct } = require("./zohoCrmClient");
 const { renderLargeLabelPdf } = require("./pdfRenderer");
 
-const PDF_LABEL_TYPES = ["certified", "uncertified", "parcel"];
+const PDF_LABEL_TYPES = ["certified", "parcel"];
 
 function send(res, status, headers, body) {
   res.statusCode = status;
