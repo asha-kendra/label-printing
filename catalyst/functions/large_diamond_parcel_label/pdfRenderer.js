@@ -50,6 +50,14 @@ const FIELD_ROWS_BY_TYPE = {
   ],
 };
 
+// Certified diamonds get a distinct color scheme (navy labels/SKU,
+// orange values/cert line, red measurements), matching a reference
+// sample the user provided. Other label types stay plain black.
+const COLOR_NAVY = "#16305C";
+const COLOR_ORANGE = "#C1751D";
+const COLOR_RED = "#B02B24";
+const COLOR_BLACK = "#000000";
+
 function measurementsLine(data) {
   if (!isEmpty(data.measurements_mm)) {
     return `${String(data.measurements_mm).replace(/x/g, "×")}mm`;
@@ -76,10 +84,10 @@ async function renderLargeLabelPdf(data) {
     .lineWidth(0.5)
     .stroke("black");
 
-  function drawAt(x, yTop, text, { bold = true, maxWidthMm = null } = {}) {
+  function drawAt(x, yTop, text, { bold = true, maxWidthMm = null, color = COLOR_BLACK } = {}) {
     const baselinePt = mm(yTop);
     const topPt = baselinePt - FONT_SIZE * HELVETICA_ASCENT;
-    doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(FONT_SIZE);
+    doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(FONT_SIZE).fillColor(color);
     const xPt = mm(x);
     if (maxWidthMm != null) {
       const textWidthPt = doc.widthOfString(text);
@@ -97,22 +105,27 @@ async function renderLargeLabelPdf(data) {
     doc.text(text, xPt, topPt, { lineBreak: false });
   }
 
+  const isCertified = data.label_type === "certified";
+  const skuColor = isCertified ? COLOR_NAVY : COLOR_BLACK;
+  const valueColor = isCertified ? COLOR_ORANGE : COLOR_BLACK;
+  const measColor = isCertified ? COLOR_RED : COLOR_BLACK;
+
   const sku = data.sku || "";
   const growthType = data.growth_type || "Natural";
 
   const qrPng = await QRCode.toBuffer(sku || " ", { margin: 0, errorCorrectionLevel: "M" });
   doc.image(qrPng, mm(QR.x), mm(QR.top), { width: mm(QR.size), height: mm(QR.size) });
 
-  drawAt(LEFT_X, SKU_Y, sku);
-  drawAt(LEFT_X, GROWTH_Y, growthType);
+  drawAt(LEFT_X, SKU_Y, sku, { color: skuColor });
+  drawAt(LEFT_X, GROWTH_Y, growthType, { color: skuColor });
 
   const fieldRows = FIELD_ROWS_BY_TYPE[data.label_type] || FIELD_ROWS_BY_TYPE.certified;
   const rowYs = FIELD_ROW_Y[fieldRows.length];
   fieldRows.forEach(([, label, getValue], i) => {
     const y = rowYs[i];
-    drawAt(LEFT_X, y, label);
+    drawAt(LEFT_X, y, label, { color: skuColor });
     const value = getValue(data);
-    if (!isEmpty(value)) drawAt(VALUE_X, y, String(value));
+    if (!isEmpty(value)) drawAt(VALUE_X, y, String(value), { color: valueColor });
   });
 
   // Certified diamonds always show the lab + certificate number here.
@@ -131,8 +144,8 @@ async function renderLargeLabelPdf(data) {
   const measLine = measurementsLine(data);
   const rightColumnMaxWidthMm = widthMm - RIGHT_X - 1.5;
 
-  if (giaLine) drawAt(RIGHT_X, GIA_Y, giaLine, { maxWidthMm: rightColumnMaxWidthMm });
-  if (measLine) drawAt(RIGHT_X, MEAS_Y, measLine, { maxWidthMm: rightColumnMaxWidthMm });
+  if (giaLine) drawAt(RIGHT_X, GIA_Y, giaLine, { maxWidthMm: rightColumnMaxWidthMm, color: valueColor });
+  if (measLine) drawAt(RIGHT_X, MEAS_Y, measLine, { maxWidthMm: rightColumnMaxWidthMm, color: measColor });
 
   doc.end();
   return done;
