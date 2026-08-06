@@ -112,18 +112,22 @@ function buildLabelData(item, customFields, labelTypeOverride) {
 // source the data came from.
 // This script only handles two label types: certified and parcel --
 // there is no separate "uncertified individual stone" label here.
-// Certified is Stock_Caregory containing "diamond". Parcel is either
-// Stock_Caregory containing "parcel" directly, OR Stock_Caregory=
-// "Uncertified" with Stock_Sub_Category="Parcel" -- per instruction,
-// an Uncertified-category record is only in scope for this script when
-// its sub-category marks it as a parcel; a lone Uncertified stone
-// (Stock_Sub_Category="Single Item" etc.) is out of scope and returns
-// null, same as any other unsupported category.
+// Both rules key off three fields together -- Category (the cert-status
+// field: "Certified"/"Uncertified"; distinct from Stock_Caregory), plus
+// Stock_Caregory and Stock_Sub_Category:
+//   certified: Category=Certified,   Stock_Caregory=Diamonds, Stock_Sub_Category=Single stone/item
+//   parcel:    Category=Uncertified, Stock_Caregory=Diamonds, Stock_Sub_Category=Parcel
+// Any other combination (e.g. an Uncertified single stone) is out of
+// scope for this script and returns null, same as any unmapped category.
 function detectLabelTypeFromCrmProduct(product) {
+  const category = (product.Category || "").toLowerCase();
   const stockCategory = (product.Stock_Caregory || "").toLowerCase();
   const subCategory = (product.Stock_Sub_Category || "").toLowerCase();
-  if (stockCategory.includes("diamond")) return "certified";
-  if (stockCategory.includes("parcel") || (stockCategory.includes("uncertified") && subCategory.includes("parcel"))) {
+  const isDiamond = stockCategory.includes("diamond");
+  if (isDiamond && category.includes("certified") && !category.includes("uncertified") && subCategory.includes("single")) {
+    return "certified";
+  }
+  if (isDiamond && category.includes("uncertified") && subCategory.includes("parcel")) {
     return "parcel";
   }
   return null;
@@ -134,7 +138,8 @@ function buildLabelDataFromCrmProduct(product, labelTypeOverride) {
   if (!labelType) {
     throw new Error(
       `Could not determine label type for CRM product ${product.id} ` +
-        `(Stock_Caregory=${product.Stock_Caregory}, Parent_Category=${product.Parent_Category}). ` +
+        `(Category=${product.Category}, Stock_Caregory=${product.Stock_Caregory}, ` +
+        `Stock_Sub_Category=${product.Stock_Sub_Category}). ` +
         `Pass label_type explicitly.`
     );
   }
