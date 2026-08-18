@@ -12,21 +12,20 @@ function mm(v) {
 // Foldable two-panel tag: two equal 25x11mm panels side by side (50x11mm
 // total), meant to be folded in half at the midpoint so the two panels
 // face each other/back each other around a string or loop. Same format
-// as jewellery_label, with one addition: a price line (Main_Total)
-// below the ProductType (e.g. "Lab Grown") in the left panel -- left
-// panel is now 3 lines (SKU, ProductType, Price) instead of 2.
+// as jewellery_label, with additions: Style ID and a price line
+// (Main_Total) below the ProductType (e.g. "Lab Grown") in the left
+// panel -- left panel is now 4 lines (SKU, ProductType, Style ID,
+// Price) instead of 2. Row y-positions reuse the same evenly-spaced
+// anchors as the right panel's DETAIL_ROW_Y so both columns line up.
 const HALF_WIDTH_MM = 25;
 const HEIGHT_MM = 11;
 const TOTAL_WIDTH_MM = HALF_WIDTH_MM * 2;
 
 const QR = { x: 2.6, y: 1.6, size: 7.4 };
-const SKU_FONT_SIZE = 6.0;
-const PRICE_FONT_SIZE = 6.0;
-const GROWTH_FONT_SIZE = 6.0;
+const LEFT_FONT_SIZE = 6.0;
 const LEFT_TEXT_X = 12.6;
-const SKU_Y = 3.2;
-const GROWTH_Y = 5.5;
-const PRICE_Y = 7.8;
+const LEFT_ROW_Y = [2.4, 4.9, 7.4, 9.9];
+const [SKU_Y, GROWTH_Y, STYLE_ID_Y, PRICE_Y] = LEFT_ROW_Y;
 
 const DETAIL_FONT_SIZE = 4.5;
 const RIGHT_TEXT_X = HALF_WIDTH_MM + 1.5;
@@ -72,9 +71,10 @@ async function renderJewelleryLabelPdf(data) {
   const qrPng = await QRCode.toBuffer(data.sku || " ", { margin: 0, errorCorrectionLevel: "M" });
   doc.image(qrPng, mm(QR.x), mm(QR.y), { width: mm(QR.size), height: mm(QR.size) });
 
-  if (!isEmpty(data.sku)) drawAt(LEFT_TEXT_X, SKU_Y, data.sku, { fontSize: SKU_FONT_SIZE });
-  if (!isEmpty(data.growth_type)) drawAt(LEFT_TEXT_X, GROWTH_Y, data.growth_type, { fontSize: GROWTH_FONT_SIZE });
-  if (!isEmpty(data.price)) drawAt(LEFT_TEXT_X, PRICE_Y, `9${data.price}9`, { fontSize: PRICE_FONT_SIZE });
+  if (!isEmpty(data.sku)) drawAt(LEFT_TEXT_X, SKU_Y, data.sku, { fontSize: LEFT_FONT_SIZE });
+  if (!isEmpty(data.growth_type)) drawAt(LEFT_TEXT_X, GROWTH_Y, data.growth_type, { fontSize: LEFT_FONT_SIZE });
+  if (!isEmpty(data.style_id)) drawAt(LEFT_TEXT_X, STYLE_ID_Y, data.style_id, { fontSize: LEFT_FONT_SIZE });
+  if (!isEmpty(data.price)) drawAt(LEFT_TEXT_X, PRICE_Y, `9${data.price}9`, { fontSize: LEFT_FONT_SIZE });
 
   const line1 = [data.parent_category, data.sub_category].filter((v) => !isEmpty(v)).join(" - ") || null;
   const line2 = [data.diamond_shape, data.metal_type, data.metal_purity].filter((v) => !isEmpty(v)).join(" ") || null;

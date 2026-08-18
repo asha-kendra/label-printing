@@ -17,6 +17,7 @@ function buildLabelDataFromCrmProduct(product) {
     label_type: "jewellery",
     sku: product.Product_Code || null,
     growth_type: product.ProductType || null,
+    style_id: product.Style_ID || null,
     price: isEmpty(product.Main_Total) ? null : product.Main_Total,
     parent_category: product.Parent_Category || null,
     diamond_shape: product.Shape || null,
