@@ -74,7 +74,7 @@ async function renderJewelleryLabelPdf(data) {
 
   if (!isEmpty(data.sku)) drawAt(LEFT_TEXT_X, SKU_Y, data.sku, { fontSize: SKU_FONT_SIZE });
   if (!isEmpty(data.growth_type)) drawAt(LEFT_TEXT_X, GROWTH_Y, data.growth_type, { fontSize: GROWTH_FONT_SIZE });
-  if (!isEmpty(data.price)) drawAt(LEFT_TEXT_X, PRICE_Y, `£${data.price}`, { fontSize: PRICE_FONT_SIZE });
+  if (!isEmpty(data.price)) drawAt(LEFT_TEXT_X, PRICE_Y, `9${data.price}9`, { fontSize: PRICE_FONT_SIZE });
 
   const line1 = [data.parent_category, data.sub_category].filter((v) => !isEmpty(v)).join(" - ") || null;
   const line2 = [data.diamond_shape, data.metal_type, data.metal_purity].filter((v) => !isEmpty(v)).join(" ") || null;
