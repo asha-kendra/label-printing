@@ -28,7 +28,7 @@ const LEFT_ROW_Y = [2.4, 4.9, 7.4, 9.9];
 const [SKU_Y, GROWTH_Y, STYLE_ID_Y, PRICE_Y] = LEFT_ROW_Y;
 
 const DETAIL_FONT_SIZE = 4.5;
-const LAST_ROW_FONT_SIZE = 3.5; // last right-panel line is a bit smaller than the rest
+const LAST_ROW_FONT_SIZE = 4.0; // last right-panel line is a bit smaller than the rest
 const RIGHT_TEXT_X = HALF_WIDTH_MM + 1.5;
 const DETAIL_ROW_Y = [2.4, 4.9, 7.4, 9.9];
 const DETAIL_MAX_WIDTH_MM = TOTAL_WIDTH_MM - RIGHT_TEXT_X - 1.0;
