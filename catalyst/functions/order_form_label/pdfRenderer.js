@@ -117,7 +117,7 @@ async function renderOrderFormLabelPdf(data, printedAt) {
   ];
 
   if (headerLine) drawAt(TEXT_X, HEADER_Y, headerLine, { fontSize: HEADER_FONT_SIZE, bold: true, maxWidthMm: TEXT_MAX_WIDTH_MM });
-  if (orderTypeLine) drawAt(ORDER_TYPE_X, ORDER_TYPE_Y, orderTypeLine, { fontSize: BODY_FONT_SIZE, maxWidthMm: ORDER_TYPE_MAX_WIDTH_MM });
+  if (orderTypeLine) drawAt(ORDER_TYPE_X, ORDER_TYPE_Y, orderTypeLine, { fontSize: BODY_FONT_SIZE, bold: true, maxWidthMm: ORDER_TYPE_MAX_WIDTH_MM });
   bodyLines.forEach((line, i) => {
     if (line) drawAt(TEXT_X, ROW_Y[i], line, { fontSize: BODY_FONT_SIZE, maxWidthMm: TEXT_MAX_WIDTH_MM });
   });
