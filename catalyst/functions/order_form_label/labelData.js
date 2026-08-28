@@ -6,16 +6,17 @@
 //   Dispatch_Queue: "103" -- confirmed as the "Client ID:" field.
 //   Account_Name.name / Contact_Name.name: "Laura Dumont" -- client name.
 //   Owner.name: "Laura Dumont" -- sales rep (record owner).
-//   Order_Type: "APPRO" -- confirmed real field, distinct from the
-//     pending "Appro:" number.
+//   Order_Type: "APPRO" -- confirmed real field; the "APPRO" text next
+//     to the header IS this field's value, not a separate label.
 //   Created_Time: "2026-08-19T14:19:28+01:00" -- submitted date/time.
 //   Quoted_Items (array): used to count "No of items" -- no dedicated
 //     count field was found on the record, so this is a best-effort
 //     stand-in, not a confirmed field.
-// The "Appro:" number (e.g. 248516 on the printed sample) has NO
-// confirmed field yet -- appro_no is left null until given a real API
-// field name. "Label Printed" is not a CRM field at all -- it's
-// stamped with the current time at render time, in pdfRenderer.js.
+// The number shown next to the order type (e.g. "APPRO | 5678989") is
+// also Dispatch_Queue -- same field as Client ID, per instruction, even
+// though it duplicates that line. "Label Printed" is not a CRM field
+// at all -- it's stamped with the current time at render time, in
+// pdfRenderer.js.
 function isEmpty(v) {
   return v === null || v === undefined || v === "";
 }
@@ -27,7 +28,7 @@ function buildLabelDataFromQuote(quote) {
 
   return {
     order_no: quote.Quote_Number || null,
-    appro_no: null, // pending: no confirmed field yet
+    appro_no: quote.Dispatch_Queue || null,
     client_id: quote.Dispatch_Queue || null,
     client_name: clientName,
     sales_rep: salesRep,
