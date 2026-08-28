@@ -10,24 +10,28 @@ function mm(v) {
 }
 
 // Single-panel order-form/quote label, 50x11mm -- not the two-panel
-// foldable jewellery format. Layout: a bold header line (Order/Appro
-// numbers), 7 regular-weight detail lines below it (including Order
-// Type), a small logo mark and a QR code in a narrow right-hand
-// column. Row positions are hand-picked to fit 8 total lines inside
-// the 11mm height.
+// foldable jewellery format. Layout: a bold "Order:" header with the
+// Order Type + Appro number sitting beside it on the same row, 6
+// regular-weight detail lines below, a small logo mark and a QR code
+// in a narrower right-hand column. Positions hand-tuned via the
+// layout-bench editor and confirmed by the user.
 const WIDTH_MM = 50;
 const HEIGHT_MM = 11;
 
-const TEXT_X = 1.6;
-const TEXT_MAX_WIDTH_MM = 38.5; // leaves room for the logo/QR column on the right
+const TEXT_X = 1.5;
+const TEXT_MAX_WIDTH_MM = 35.5; // leaves room for the logo/QR column on the right
 
 const HEADER_FONT_SIZE = 4.0;
 const BODY_FONT_SIZE = 3.3;
 const HEADER_Y = 1.4;
-const ROW_Y = [2.75, 4.0, 5.25, 6.5, 7.75, 9.0, 10.25];
+const ROW_Y = [2.8, 4.2, 5.6, 7.1, 8.6, 10.1];
 
-const LOGO = { x: 41.5, y: 0.8, width: 3.2, height: 5.6 };
-const QR = { x: 41.0, y: 6.2, size: 4.4 };
+const ORDER_TYPE_X = 21.5;
+const ORDER_TYPE_Y = 1.4;
+const ORDER_TYPE_MAX_WIDTH_MM = 15.4; // between ORDER_TYPE_X and the logo/QR column
+
+const LOGO = { x: 37.9, y: 0.5, width: 5.1, height: 3.0 };
+const QR = { x: 37.4, y: 4.4, size: 6.4 };
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -97,8 +101,8 @@ async function renderOrderFormLabelPdf(data, printedAt) {
     doc.text(text, xPt, topPt, { lineBreak: false });
   }
 
-  const headerParts = [!isEmpty(data.order_no) ? `Order: ${data.order_no}` : null, !isEmpty(data.appro_no) ? `Appro: ${data.appro_no}` : null];
-  const headerLine = headerParts.filter(Boolean).join(" | ") || null;
+  const headerLine = !isEmpty(data.order_no) ? `Order: ${data.order_no}` : null;
+  const orderTypeLine = [data.order_type, data.appro_no].filter((v) => !isEmpty(v)).join(" | ") || null;
 
   const submittedLine = data.submitted_at ? `Submitted: ${formatDateTime(new Date(data.submitted_at))}` : null;
   const printedLine = `Label Printed: ${formatDateTime(printedAt)}`;
@@ -107,13 +111,13 @@ async function renderOrderFormLabelPdf(data, printedAt) {
     !isEmpty(data.client_id) ? `Client ID: ${data.client_id}` : null,
     !isEmpty(data.client_name) ? `Client: ${data.client_name}` : null,
     !isEmpty(data.sales_rep) ? `Sales: ${data.sales_rep}` : null,
-    !isEmpty(data.order_type) ? `Order Type: ${data.order_type}` : null,
     submittedLine,
     printedLine,
     !isEmpty(data.item_count) ? `No of items: ${data.item_count}` : null,
   ];
 
   if (headerLine) drawAt(TEXT_X, HEADER_Y, headerLine, { fontSize: HEADER_FONT_SIZE, bold: true, maxWidthMm: TEXT_MAX_WIDTH_MM });
+  if (orderTypeLine) drawAt(ORDER_TYPE_X, ORDER_TYPE_Y, orderTypeLine, { fontSize: BODY_FONT_SIZE, maxWidthMm: ORDER_TYPE_MAX_WIDTH_MM });
   bodyLines.forEach((line, i) => {
     if (line) drawAt(TEXT_X, ROW_Y[i], line, { fontSize: BODY_FONT_SIZE, maxWidthMm: TEXT_MAX_WIDTH_MM });
   });
