@@ -11,19 +11,20 @@ function mm(v) {
 
 // Single-panel order-form/quote label, 50x11mm -- not the two-panel
 // foldable jewellery format. Layout: a bold header line (Order/Appro
-// numbers), 6 regular-weight detail lines below it, a small logo mark
-// and a QR code in a narrow right-hand column. Row positions are
-// hand-picked to fit 7 total lines inside the 11mm height.
+// numbers), 7 regular-weight detail lines below it (including Order
+// Type), a small logo mark and a QR code in a narrow right-hand
+// column. Row positions are hand-picked to fit 8 total lines inside
+// the 11mm height.
 const WIDTH_MM = 50;
 const HEIGHT_MM = 11;
 
 const TEXT_X = 1.6;
 const TEXT_MAX_WIDTH_MM = 38.5; // leaves room for the logo/QR column on the right
 
-const HEADER_FONT_SIZE = 3.8;
-const BODY_FONT_SIZE = 3.0;
-const HEADER_Y = 1.9;
-const ROW_Y = [3.2, 4.5, 5.8, 7.1, 8.4, 9.7];
+const HEADER_FONT_SIZE = 4.0;
+const BODY_FONT_SIZE = 3.3;
+const HEADER_Y = 1.4;
+const ROW_Y = [2.75, 4.0, 5.25, 6.5, 7.75, 9.0, 10.25];
 
 const LOGO = { x: 41.5, y: 0.8, width: 3.2, height: 5.6 };
 const QR = { x: 41.0, y: 6.2, size: 4.4 };
@@ -106,6 +107,7 @@ async function renderOrderFormLabelPdf(data, printedAt) {
     !isEmpty(data.client_id) ? `Client ID: ${data.client_id}` : null,
     !isEmpty(data.client_name) ? `Client: ${data.client_name}` : null,
     !isEmpty(data.sales_rep) ? `Sales: ${data.sales_rep}` : null,
+    !isEmpty(data.order_type) ? `Order Type: ${data.order_type}` : null,
     submittedLine,
     printedLine,
     !isEmpty(data.item_count) ? `No of items: ${data.item_count}` : null,

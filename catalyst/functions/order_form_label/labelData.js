@@ -6,6 +6,8 @@
 //   Dispatch_Queue: "103" -- confirmed as the "Client ID:" field.
 //   Account_Name.name / Contact_Name.name: "Laura Dumont" -- client name.
 //   Owner.name: "Laura Dumont" -- sales rep (record owner).
+//   Order_Type: "APPRO" -- confirmed real field, distinct from the
+//     pending "Appro:" number.
 //   Created_Time: "2026-08-19T14:19:28+01:00" -- submitted date/time.
 //   Quoted_Items (array): used to count "No of items" -- no dedicated
 //     count field was found on the record, so this is a best-effort
@@ -29,6 +31,7 @@ function buildLabelDataFromQuote(quote) {
     client_id: quote.Dispatch_Queue || null,
     client_name: clientName,
     sales_rep: salesRep,
+    order_type: quote.Order_Type || null,
     submitted_at: quote.Created_Time || null,
     item_count: isEmpty(itemCount) ? null : itemCount,
   };
