@@ -38,4 +38,38 @@ function buildLabelDataFromQuote(quote) {
   };
 }
 
-module.exports = { isEmpty, buildLabelDataFromQuote };
+// UNVERIFIED -- built from Zoho Inventory's documented Sales Order
+// schema (salesorder_number, customer_name, salesperson_name, date,
+// line_items, custom_fields), not confirmed against a real record (the
+// Inventory connector wasn't reachable when this was written). The
+// Henig-specific concepts that came from custom fields on the CRM
+// Quotes side (Client ID / Order Type) have no known standard Sales
+// Order equivalent, so this falls back to searching custom_fields by
+// label. Adjust once tested against a real sales_order_id.
+function findCustomField(salesOrder, labelSubstrings) {
+  const fields = salesOrder.custom_fields || [];
+  for (const cf of fields) {
+    const label = (cf.label || cf.customfield_name || cf.field_name || "").toLowerCase();
+    if (labelSubstrings.some((s) => label.includes(s)) && !isEmpty(cf.value)) return cf.value;
+  }
+  return null;
+}
+
+function buildLabelDataFromSalesOrder(salesOrder) {
+  const itemCount = Array.isArray(salesOrder.line_items) ? salesOrder.line_items.length : null;
+  const clientId = findCustomField(salesOrder, ["dispatch queue", "client id"]);
+  const orderType = findCustomField(salesOrder, ["order type", "appro"]);
+
+  return {
+    order_no: salesOrder.salesorder_number || null,
+    appro_no: clientId,
+    client_id: clientId,
+    client_name: salesOrder.customer_name || null,
+    sales_rep: salesOrder.salesperson_name || null,
+    order_type: orderType,
+    submitted_at: salesOrder.date || salesOrder.created_time || null,
+    item_count: isEmpty(itemCount) ? null : itemCount,
+  };
+}
+
+module.exports = { isEmpty, buildLabelDataFromQuote, buildLabelDataFromSalesOrder };

@@ -1,14 +1,17 @@
 // Catalyst Advanced I/O function (Node.js): Order Form / Quote label,
-// 50x11mm, single panel (not the foldable jewellery format). Fetches a
-// Zoho CRM Quotes record and renders the printed-sample layout -- see
-// labelData.js for which fields are confirmed vs still pending (Appro
-// number in particular has no confirmed field yet).
+// 50x11mm, single panel (not the foldable jewellery format). Fetches
+// either a Zoho CRM Quotes record or a Zoho Inventory Sales Order and
+// renders the same printed-sample layout -- see labelData.js for which
+// fields are confirmed (Quotes) vs unverified (Sales Orders, since the
+// Inventory connector wasn't reachable when that mapping was written).
 //
 // URL shape once deployed:
-//   GET /server/order_form_label?quote_id=<id>   -> PDF, inline (Zoho CRM Quotes)
+//   GET /server/order_form_label?quote_id=<id>         -> PDF, inline (Zoho CRM Quotes)
+//   GET /server/order_form_label?sales_order_id=<id>   -> PDF, inline (Zoho Inventory Sales Orders)
 
-const { buildLabelDataFromQuote } = require("./labelData");
+const { buildLabelDataFromQuote, buildLabelDataFromSalesOrder } = require("./labelData");
 const { getQuote } = require("./zohoCrmClient");
+const { getSalesOrder } = require("./zohoInventoryClient");
 const { renderOrderFormLabelPdf } = require("./pdfRenderer");
 
 function send(res, status, headers, body) {
@@ -32,17 +35,25 @@ function getQuery(req) {
 module.exports = async (req, res) => {
   const query = getQuery(req);
   const quoteId = query.quote_id;
-  if (!quoteId) {
-    send(res, 400, { "Content-Type": "text/plain" }, "Missing required query param: quote_id");
+  const salesOrderId = query.sales_order_id;
+  if (!quoteId && !salesOrderId) {
+    send(res, 400, { "Content-Type": "text/plain" }, "Missing required query param: quote_id or sales_order_id");
     return;
   }
 
+  const sourceLabel = salesOrderId ? `sales_order_id=${salesOrderId}` : `quote_id=${quoteId}`;
+
   let data;
   try {
-    const quote = await getQuote(quoteId);
-    data = buildLabelDataFromQuote(quote);
+    if (salesOrderId) {
+      const salesOrder = await getSalesOrder(salesOrderId);
+      data = buildLabelDataFromSalesOrder(salesOrder);
+    } else {
+      const quote = await getQuote(quoteId);
+      data = buildLabelDataFromQuote(quote);
+    }
   } catch (err) {
-    send(res, 502, { "Content-Type": "text/plain" }, `Could not fetch/build label for quote_id=${quoteId}: ${err.message}`);
+    send(res, 502, { "Content-Type": "text/plain" }, `Could not fetch/build label for ${sourceLabel}: ${err.message}`);
     return;
   }
 
@@ -52,7 +63,7 @@ module.exports = async (req, res) => {
     200,
     {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${data.order_no || quoteId}.pdf"`,
+      "Content-Disposition": `inline; filename="${data.order_no || sourceLabel}.pdf"`,
     },
     pdfBuffer
   );
