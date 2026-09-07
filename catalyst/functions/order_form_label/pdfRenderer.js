@@ -22,8 +22,8 @@ const HEIGHT_MM = 11;
 const TEXT_X = 1.5;
 const TEXT_MAX_WIDTH_MM = 35.5; // leaves room for the logo/QR column on the right
 
-const HEADER_FONT_SIZE = 4.0;
-const BODY_FONT_SIZE = 3.3;
+const HEADER_FONT_SIZE = 3.6;
+const BODY_FONT_SIZE = 3.0;
 const HEADER_Y = 1.4;
 const ROW_Y = [2.8, 4.2, 5.6, 7.1, 8.6, 10.1];
 
