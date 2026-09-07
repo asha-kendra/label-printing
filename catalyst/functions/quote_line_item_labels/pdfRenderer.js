@@ -57,7 +57,7 @@ const LARGE_FIELD_ROW_Y = {
 
 const CERTIFIED_FIELD_ROWS = [
   ["shp", "Shp.", (d) => d.shape],
-  ["wt", "Wt", (d) => (!isEmpty(d.weight_ct) ? `${d.weight_ct} ct` : null)],
+  ["wt", "Qty", (d) => (!isEmpty(d.weight_ct) ? `${d.weight_ct} ct` : null)],
   ["col", "Col", (d) => d.colour],
   ["cla", "Cla", (d) => d.clarity],
 ];
