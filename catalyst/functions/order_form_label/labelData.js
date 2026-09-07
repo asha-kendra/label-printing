@@ -12,11 +12,15 @@
 //   Quoted_Items (array): used to count "No of items" -- no dedicated
 //     count field was found on the record, so this is a best-effort
 //     stand-in, not a confirmed field.
-// The number shown next to the order type (e.g. "APPRO | 5678989") is
-// also Dispatch_Queue -- same field as Client ID, per instruction, even
-// though it duplicates that line. "Label Printed" is not a CRM field
-// at all -- it's stamped with the current time at render time, in
-// pdfRenderer.js.
+// The number shown next to the order type (e.g. "APPRO | SO-00234") is
+// NOT a CRM field at all -- per instruction, every "Appro" order form
+// gets a matching Sales Order created in Zoho Inventory, and that
+// Sales Order's own salesorder_number is what belongs here. Since
+// that requires a live cross-system lookup, appro_no is left null in
+// this function -- index.js fills it in after a separate Inventory
+// lookup (see zohoInventoryClient.js's findSalesOrderByReferenceNumber).
+// "Label Printed" is not a CRM field at all -- it's stamped with the
+// current time at render time, in pdfRenderer.js.
 function isEmpty(v) {
   return v === null || v === undefined || v === "";
 }
@@ -28,7 +32,7 @@ function buildLabelDataFromQuote(quote) {
 
   return {
     order_no: quote.Quote_Number || null,
-    appro_no: quote.Dispatch_Queue || null,
+    appro_no: null, // filled in by index.js from the linked Zoho Inventory Sales Order
     client_id: quote.Dispatch_Queue || null,
     client_name: clientName,
     sales_rep: salesRep,
@@ -38,35 +42,29 @@ function buildLabelDataFromQuote(quote) {
   };
 }
 
-// UNVERIFIED -- built from Zoho Inventory's documented Sales Order
-// schema (salesorder_number, customer_name, salesperson_name, date,
-// line_items, custom_fields), not confirmed against a real record (the
-// Inventory connector wasn't reachable when this was written). The
-// Henig-specific concepts that came from custom fields on the CRM
-// Quotes side (Client ID / Order Type) have no known standard Sales
-// Order equivalent, so this falls back to searching custom_fields by
-// label. Adjust once tested against a real sales_order_id.
-function findCustomField(salesOrder, labelSubstrings) {
-  const fields = salesOrder.custom_fields || [];
-  for (const cf of fields) {
-    const label = (cf.label || cf.customfield_name || cf.field_name || "").toLowerCase();
-    if (labelSubstrings.some((s) => label.includes(s)) && !isEmpty(cf.value)) return cf.value;
-  }
-  return null;
-}
-
+// Confirmed live against Zoho Inventory's Sales Order custom-field
+// metadata (bulk_fetch_fields, entity=salesorder, org 20108921672):
+// cf_sales_type is real, with values including "APPRO" -- this is the
+// Inventory-side equivalent of the CRM Quote's Order_Type. No custom
+// field matching "Client ID" / "Dispatch Queue" (as a number) was found
+// among Sales Order custom fields -- the closest is cf_dispatch_status,
+// which is a status dropdown (Draft/Submitted/Shipped/...), not the
+// same thing, so client_id stays unconfirmed (null) for this path.
+// salesorder_number itself is the real, standard field for "Appro
+// number" -- when fetching a Sales Order directly (not via a linked
+// CRM Quote), its own number goes in the Appro slot, and
+// reference_number (falling back to salesorder_number) is used for
+// "Order:" since that's expected to hold the originating Quote number.
 function buildLabelDataFromSalesOrder(salesOrder) {
   const itemCount = Array.isArray(salesOrder.line_items) ? salesOrder.line_items.length : null;
-  const clientId = findCustomField(salesOrder, ["dispatch queue", "client id"]);
-  const orderType = findCustomField(salesOrder, ["order type", "appro"]);
 
   return {
-    order_no: salesOrder.salesorder_number || null,
-    appro_no: clientId,
-    client_id: clientId,
+    order_no: salesOrder.reference_number || salesOrder.salesorder_number || null,
+    appro_no: salesOrder.salesorder_number || null,
+    client_id: null, // unconfirmed -- no matching Sales Order field found yet
     client_name: salesOrder.customer_name || null,
     sales_rep: salesOrder.salesperson_name || null,
-    order_type: orderType,
+    order_type: salesOrder.cf_sales_type || null,
     submitted_at: salesOrder.date || salesOrder.created_time || null,
     item_count: isEmpty(itemCount) ? null : itemCount,
   };

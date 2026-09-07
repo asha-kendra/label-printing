@@ -1,9 +1,11 @@
 // Catalyst Advanced I/O function (Node.js): Order Form / Quote label,
 // 50x11mm, single panel (not the foldable jewellery format). Fetches
 // either a Zoho CRM Quotes record or a Zoho Inventory Sales Order and
-// renders the same printed-sample layout -- see labelData.js for which
-// fields are confirmed (Quotes) vs unverified (Sales Orders, since the
-// Inventory connector wasn't reachable when that mapping was written).
+// renders the same printed-sample layout. For the Quotes path, also
+// looks up the matching Zoho Inventory Sales Order (every "Appro"
+// order form gets one, per instruction) to pull its real
+// salesorder_number as the Appro number -- see labelData.js for which
+// fields are confirmed vs unverified.
 //
 // URL shape once deployed:
 //   GET /server/order_form_label?quote_id=<id>         -> PDF, inline (Zoho CRM Quotes)
@@ -11,7 +13,7 @@
 
 const { buildLabelDataFromQuote, buildLabelDataFromSalesOrder } = require("./labelData");
 const { getQuote } = require("./zohoCrmClient");
-const { getSalesOrder } = require("./zohoInventoryClient");
+const { getSalesOrder, findSalesOrderByReferenceNumber } = require("./zohoInventoryClient");
 const { renderOrderFormLabelPdf } = require("./pdfRenderer");
 
 function send(res, status, headers, body) {
@@ -51,6 +53,17 @@ module.exports = async (req, res) => {
     } else {
       const quote = await getQuote(quoteId);
       data = buildLabelDataFromQuote(quote);
+      // Every "Appro" order form gets a matching Sales Order in Zoho
+      // Inventory -- look it up by reference_number (the Quote's own
+      // number) and use its salesorder_number as the Appro number.
+      // Best-effort: if the lookup fails or finds nothing, the label
+      // still renders, just without that number.
+      try {
+        const linkedSalesOrder = await findSalesOrderByReferenceNumber(data.order_no);
+        if (linkedSalesOrder) data.appro_no = linkedSalesOrder.salesorder_number || null;
+      } catch (lookupErr) {
+        // swallow -- Appro number is a nice-to-have, not worth failing the whole label for
+      }
     }
   } catch (err) {
     send(res, 502, { "Content-Type": "text/plain" }, `Could not fetch/build label for ${sourceLabel}: ${err.message}`);
