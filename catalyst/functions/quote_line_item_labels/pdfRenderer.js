@@ -49,10 +49,16 @@ const LARGE_GROWTH_Y = 9.3;
 const LARGE_GIA_Y = 22.0;
 const LARGE_QR = { x: LARGE_RIGHT_X, top: 3.6, size: 14.4 };
 
+// 7-row bottom anchor (29.0) is lower than the others (26.3) --
+// intentional: the measurements line that used to anchor the right
+// column at 26.3 was removed, freeing up space below it, so the
+// 7-row parcel list (which wraps "No.of Stones Ordered" onto its own
+// two lines) can spread further down instead of shrinking its font.
 const LARGE_FIELD_ROW_Y = {
   4: [14.7, 18.9, 22.7, 26.3],
   5: [14.7, 17.6, 20.5, 23.4, 26.3],
   6: [14.7, 17.0, 19.3, 21.7, 24.0, 26.3],
+  7: [14.7, 17.1, 19.4, 21.8, 24.2, 26.6, 29.0],
 };
 
 const CERTIFIED_FIELD_ROWS = [
@@ -67,7 +73,11 @@ const LARGE_FIELD_ROWS_BY_TYPE = {
   parcel: [
     ...CERTIFIED_FIELD_ROWS,
     ["size", "Size", (d) => (!isEmpty(d.mm_size) ? `${d.mm_size}mm` : null)],
-    ["stones_ordered", "No.of Stones Ordered", (d) => (!isEmpty(d.stones_ordered) ? String(d.stones_ordered) : null)],
+    // "No.of Stones Ordered" wraps across two rows instead of squeezing
+    // onto one -- the label reads "No.of Stones" / "Ordered", with the
+    // value beside the second line.
+    ["stones_ordered_label", "No.of Stones", () => null],
+    ["stones_ordered_value", "Ordered", (d) => (!isEmpty(d.stones_ordered) ? String(d.stones_ordered) : null)],
   ],
 };
 
