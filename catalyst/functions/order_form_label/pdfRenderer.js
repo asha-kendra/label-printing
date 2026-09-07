@@ -28,7 +28,7 @@ const HEADER_Y = 1.4;
 const ROW_Y = [2.8, 4.2, 5.6, 7.1, 8.6, 10.1];
 
 const LOGO = { x: 37.9, y: 0.5, width: 5.1, height: 3.0 };
-const QR = { x: 37.4, y: 4.4, size: 6.4 };
+const QR = { x: 37.4, y: 3.6, size: 6.4 };
 
 function pad2(n) {
   return String(n).padStart(2, "0");
