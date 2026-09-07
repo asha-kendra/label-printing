@@ -78,6 +78,9 @@ module.exports = async (req, res) => {
       // quote can differ from the product record's own weight_ct
       // (e.g. a partial quantity out of a parcel), per instruction.
       if (!isEmpty(item.Quantity)) data.weight_ct = item.Quantity;
+      // Parcel's extra "No.of Stones Ordered" row -- also a line item
+      // field (No_Of_Stones_Ordered), not on the product record.
+      if (!isEmpty(item.No_Of_Stones_Ordered)) data.stones_ordered = item.No_Of_Stones_Ordered;
       if (!PDF_LABEL_TYPES.includes(data.label_type)) {
         skipped.push(`product_id=${productId}: unsupported label_type ${data.label_type}`);
         continue;

@@ -47,12 +47,12 @@ const LARGE_FONT_SIZE = 6.5;
 const LARGE_SKU_Y = 5.7;
 const LARGE_GROWTH_Y = 9.3;
 const LARGE_GIA_Y = 22.0;
-const LARGE_MEAS_Y = 26.3;
 const LARGE_QR = { x: LARGE_RIGHT_X, top: 3.6, size: 14.4 };
 
 const LARGE_FIELD_ROW_Y = {
   4: [14.7, 18.9, 22.7, 26.3],
   5: [14.7, 17.6, 20.5, 23.4, 26.3],
+  6: [14.7, 17.0, 19.3, 21.7, 24.0, 26.3],
 };
 
 const CERTIFIED_FIELD_ROWS = [
@@ -64,18 +64,12 @@ const CERTIFIED_FIELD_ROWS = [
 
 const LARGE_FIELD_ROWS_BY_TYPE = {
   certified: CERTIFIED_FIELD_ROWS,
-  parcel: [...CERTIFIED_FIELD_ROWS, ["size", "Size", (d) => (!isEmpty(d.mm_size) ? `${d.mm_size}mm` : null)]],
+  parcel: [
+    ...CERTIFIED_FIELD_ROWS,
+    ["size", "Size", (d) => (!isEmpty(d.mm_size) ? `${d.mm_size}mm` : null)],
+    ["stones_ordered", "No.of Stones Ordered", (d) => (!isEmpty(d.stones_ordered) ? String(d.stones_ordered) : null)],
+  ],
 };
-
-function measurementsLine(data) {
-  if (!isEmpty(data.measurements_mm)) {
-    return `${String(data.measurements_mm).replace(/x/g, "×")}mm`;
-  }
-  const dims = [data.length_mm, data.width_mm].filter((v) => !isEmpty(v)).join("-");
-  let combined = dims;
-  if (!isEmpty(data.depth_mm)) combined = dims ? `${dims}×${data.depth_mm}` : String(data.depth_mm);
-  return combined ? `${combined}mm` : null;
-}
 
 // Draws onto whatever the doc's CURRENT page is -- caller is
 // responsible for creating/sizing that page first.
@@ -98,9 +92,10 @@ function drawLargeLabelContent(doc, data) {
 
     const fieldRows = LARGE_FIELD_ROWS_BY_TYPE[data.label_type] || LARGE_FIELD_ROWS_BY_TYPE.certified;
     const rowYs = LARGE_FIELD_ROW_Y[fieldRows.length];
+    const labelColumnMaxWidthMm = LARGE_VALUE_X - LARGE_LEFT_X - 1.0;
     fieldRows.forEach(([, label, getValue], i) => {
       const y = rowYs[i];
-      drawAt(LARGE_LEFT_X, y, label, LARGE_FONT_SIZE);
+      drawAt(LARGE_LEFT_X, y, label, LARGE_FONT_SIZE, { maxWidthMm: labelColumnMaxWidthMm });
       const value = getValue(data);
       if (!isEmpty(value)) drawAt(LARGE_VALUE_X, y, String(value), LARGE_FONT_SIZE);
     });
@@ -114,11 +109,9 @@ function drawLargeLabelContent(doc, data) {
         : !isEmpty(data.mm_size)
           ? `Size ${data.mm_size}mm`
           : null;
-    const measLine = measurementsLine(data);
     const rightColumnMaxWidthMm = LARGE_WIDTH_MM - LARGE_RIGHT_X - 1.5;
 
     if (giaLine) drawAt(LARGE_RIGHT_X, LARGE_GIA_Y, giaLine, LARGE_FONT_SIZE, { maxWidthMm: rightColumnMaxWidthMm });
-    if (measLine) drawAt(LARGE_RIGHT_X, LARGE_MEAS_Y, measLine, LARGE_FONT_SIZE, { maxWidthMm: rightColumnMaxWidthMm });
   });
 }
 
