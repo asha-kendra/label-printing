@@ -15,7 +15,7 @@
 // URL shape once deployed:
 //   GET /server/quote_line_item_labels?quote_id=<id>   -> PDF, inline (Zoho CRM Quotes)
 
-const { buildLabelDataFromCrmProduct } = require("./labelData");
+const { buildLabelDataFromCrmProduct, isEmpty } = require("./labelData");
 const { getQuote, getProduct } = require("./zohoCrmClient");
 const { renderMultiLabelPdf } = require("./pdfRenderer");
 
@@ -73,6 +73,11 @@ module.exports = async (req, res) => {
     try {
       const product = await getProduct(productId);
       const data = buildLabelDataFromCrmProduct(product);
+      // Show this line item's own Quantity instead of the product's
+      // catalog weight -- the quantity actually being ordered on THIS
+      // quote can differ from the product record's own weight_ct
+      // (e.g. a partial quantity out of a parcel), per instruction.
+      if (!isEmpty(item.Quantity)) data.weight_ct = item.Quantity;
       if (!PDF_LABEL_TYPES.includes(data.label_type)) {
         skipped.push(`product_id=${productId}: unsupported label_type ${data.label_type}`);
         continue;
