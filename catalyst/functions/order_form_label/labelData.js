@@ -13,14 +13,18 @@
 //     count field was found on the record, so this is a best-effort
 //     stand-in, not a confirmed field.
 // The number shown next to the order type (e.g. "APPRO | SO-00234") is
-// NOT a CRM field at all -- per instruction, every "Appro" order form
-// gets a matching Sales Order created in Zoho Inventory, and that
-// Sales Order's own salesorder_number is what belongs here. Since
-// that requires a live cross-system lookup, appro_no is left null in
-// this function -- index.js fills it in after a separate Inventory
-// lookup (see zohoInventoryClient.js's findSalesOrderByReferenceNumber).
-// "Label Printed" is not a CRM field at all -- it's stamped with the
-// current time at render time, in pdfRenderer.js.
+// NOT a field on the Quote at all -- confirmed live, it takes two more
+// hops: the Quote's matching Appro record (CRM Sales_Orders module,
+// labelled "Appros" in the UI, linked via its Quote_Name lookup field)
+// carries an Inventory_id field, and THAT id is what fetches the real
+// Zoho Inventory Sales Order whose salesorder_number belongs here (the
+// Appro's own SO_Number field is a different, non-human-readable
+// internal reference -- not what gets displayed). Since this needs two
+// live lookups, appro_no is left null in this function -- index.js
+// fills it in (see zohoCrmClient.js's findApproByQuoteId and
+// zohoInventoryClient.js's getSalesOrder). "Label Printed" is not a
+// CRM field at all -- it's stamped with the current time at render
+// time, in pdfRenderer.js.
 function isEmpty(v) {
   return v === null || v === undefined || v === "";
 }
