@@ -1,13 +1,13 @@
 // Catalyst Advanced I/O function (Node.js): one label for one specific
 // line item on a Quote (Order Form). Fetches the Quote, finds the
-// named line item within Product_Details (the module's line-items
-// subform -- labelled "Quoted Items" in the CRM UI, but Product_Details
-// is its real api_name, confirmed live) by its own id, fetches that
-// line item's linked Products-module record (via Product_Name.id --
-// confirmed live, see zohoCrmClient.js), and builds/renders a single
-// label (certified/parcel/jewellery, same detection as
-// diamond_jewellery_parcel_label) sized for that item's own label
-// format (65x31mm certified/parcel vs 50x11mm jewellery).
+// named line item within whichever line-items field is actually
+// present (the real "Quoted Items" custom subform if the API exposes
+// it, else falls back to Product_Details, Zoho's standard built-in
+// line-items subform -- see zohoCrmClient.js for why both exist),
+// fetches that line item's linked Products-module record, and
+// builds/renders a single label (certified/parcel/jewellery, same
+// detection as diamond_jewellery_parcel_label) sized for that item's
+// own label format (65x31mm certified/parcel vs 50x11mm jewellery).
 //
 // URL shape once deployed:
 //   GET /server/quote_line_item_labels?quote_id=<id>&line_item_id=<id>   -> PDF, inline
@@ -53,25 +53,31 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const lineItems = Array.isArray(quote.Product_Details) ? quote.Product_Details : [];
+  // Prefer the real "Quoted Items" custom subform when the API exposes
+  // it; otherwise fall back to Zoho's standard Product_Details field
+  // (see zohoCrmClient.js).
+  const usingCustomSubform = Array.isArray(quote.Quoted_Items);
+  const lineItems = usingCustomSubform ? quote.Quoted_Items : Array.isArray(quote.Product_Details) ? quote.Product_Details : [];
   const item = lineItems.find((li) => String(li.id) === String(lineItemId));
   if (!item) {
     send(
       res,
       404,
       { "Content-Type": "text/plain" },
-      `line_item_id=${lineItemId} not found on quote_id=${quoteId} (has ${lineItems.length} line item(s)).`
+      `line_item_id=${lineItemId} not found on quote_id=${quoteId} (has ${lineItems.length} line item(s)).\n\nDEBUG quote_keys:\n${JSON.stringify(Object.keys(quote))}`
     );
     return;
   }
 
-  const productId = item.Product_Name && item.Product_Name.id;
+  // The custom subform's product lookup is Product_Name; the standard
+  // Product_Details field's is just "product".
+  const productId = usingCustomSubform ? item.Product_Name && item.Product_Name.id : item.product && item.product.id;
   if (!productId) {
     send(
       res,
       502,
       { "Content-Type": "text/plain" },
-      `Line item ${lineItemId} has no linked product (Product_Name.id missing).\n\nDEBUG item:\n${JSON.stringify(item, null, 2)}`
+      `Line item ${lineItemId} has no linked product.\n\nDEBUG item:\n${JSON.stringify(item, null, 2)}`
     );
     return;
   }

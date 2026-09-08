@@ -22,24 +22,25 @@ async function getProduct(productId) {
   return json.data[0];
 }
 
-// Zoho CRM's Quotes module ("Order Forms" in the UI). Confirmed live
-// against a real record (888045000012213015): the line-items subform's
-// real api_name is Product_Details -- "Quoted Items" is just this
-// field's display label in the CRM UI/reports, which is why tools that
-// render by label (rather than raw REST api_name) show it as
-// "Quoted_Items" while the actual API response never uses that key.
-// Each entry's Product_Name is a lookup object carrying that line
-// item's real Products-module record id -- that id is what gets passed
-// to getProduct() to build each line item's label.
+// Zoho CRM's Quotes module ("Order Forms" in the UI). This module
+// actually carries TWO line-item-shaped fields on this record:
+//   - Product_Details: Zoho's standard built-in line-items subform
+//     (generic keys: product, quantity, Discount, net_total, ...) --
+//     always present, but missing the org's custom columns
+//     (Stock_Category, No_Of_Stones_Ordered, etc).
+//   - the actual "Quoted Items" custom subform the business uses --
+//     confirmed live to exist (via a different tool's fetch) but its
+//     real api_name is still unconfirmed: a plain v2 GET on this record
+//     doesn't return it at all (not even the key is present), and
+//     requesting fields=Quoted_Items explicitly got rejected (response
+//     collapsed to just `id`). Bumping to API v6 here as a live test --
+//     if the custom subform is still missing after this, the field is
+//     most likely hidden from this API user via Field-Level Security
+//     in CRM Setup, not a naming/version issue.
 async function getQuote(quoteId) {
   const token = await getAccessToken();
   const apiDomain = process.env.ZOHO_API_DOMAIN || "https://www.zohoapis.com";
-  const url = new URL(`/crm/v2/Quotes/${quoteId}`, apiDomain);
-  // No `fields` param here on purpose: passing fields=Quoted_Items was
-  // tried and confirmed (live) to break the response down to just `id`
-  // -- Quoted_Items isn't a real api_name at all (see above), so Zoho
-  // silently dropped it. The full, unrestricted record fetch is what
-  // actually includes Product_Details.
+  const url = new URL(`/crm/v6/Quotes/${quoteId}`, apiDomain);
 
   const { json } = await httpsRequestJson({
     hostname: url.hostname,
