@@ -31,6 +31,10 @@ async function getQuote(quoteId) {
   const token = await getAccessToken();
   const apiDomain = process.env.ZOHO_API_DOMAIN || "https://www.zohoapis.com";
   const url = new URL(`/crm/v2/Quotes/${quoteId}`, apiDomain);
+  // Zoho's v2 API omits subform fields like Quoted_Items from the
+  // response unless explicitly requested via `fields` -- without this,
+  // the line-items array silently comes back empty.
+  url.searchParams.set("fields", "Quoted_Items");
 
   const { json } = await httpsRequestJson({
     hostname: url.hostname,
