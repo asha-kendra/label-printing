@@ -16,10 +16,24 @@ function detectLabelTypeFromCrmProduct(product) {
   const subCategory = (product.Stock_Sub_Category || "").toLowerCase();
   if (stockCategory.includes("jewellery") || stockCategory.includes("jewelry")) return "jewellery";
   const isDiamond = stockCategory.includes("diamond");
-  if (isDiamond && category.includes("certified") && !category.includes("uncertified") && subCategory.includes("single")) {
+  if (!isDiamond) return null;
+
+  const isSingle = subCategory.includes("single");
+  const isParcel = subCategory.includes("parcel");
+
+  // Category is sometimes left blank on real records -- when it is,
+  // fall back to Stock_Sub_Category alone to tell certified single
+  // stones from parcels, rather than refusing to print a label.
+  if (isEmpty(product.Category)) {
+    if (isSingle) return "certified";
+    if (isParcel) return "parcel";
+    return null;
+  }
+
+  if (category.includes("certified") && !category.includes("uncertified") && isSingle) {
     return "certified";
   }
-  if (isDiamond && category.includes("uncertified") && subCategory.includes("parcel")) {
+  if (category.includes("uncertified") && isParcel) {
     return "parcel";
   }
   return null;
