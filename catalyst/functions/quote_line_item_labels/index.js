@@ -1,7 +1,9 @@
 // Catalyst Advanced I/O function (Node.js): one label for one specific
 // line item on a Quote (Order Form). Fetches the Quote, finds the
-// named line item within Quoted_Items by its own id, fetches that line
-// item's linked Products-module record (via Product_Name.id --
+// named line item within Product_Details (the module's line-items
+// subform -- labelled "Quoted Items" in the CRM UI, but Product_Details
+// is its real api_name, confirmed live) by its own id, fetches that
+// line item's linked Products-module record (via Product_Name.id --
 // confirmed live, see zohoCrmClient.js), and builds/renders a single
 // label (certified/parcel/jewellery, same detection as
 // diamond_jewellery_parcel_label) sized for that item's own label
@@ -51,22 +53,14 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const lineItems = Array.isArray(quote.Quoted_Items) ? quote.Quoted_Items : [];
+  const lineItems = Array.isArray(quote.Product_Details) ? quote.Product_Details : [];
   const item = lineItems.find((li) => String(li.id) === String(lineItemId));
   if (!item) {
-    // Debug info to see exactly what Zoho actually sent back for this
-    // quote, rather than guessing -- temporary until the "0 line items"
-    // issue is diagnosed.
-    const debug = {
-      quote_keys: Object.keys(quote),
-      quoted_items_raw: quote.Quoted_Items,
-      has_more: quote.$has_more || null,
-    };
     send(
       res,
       404,
       { "Content-Type": "text/plain" },
-      `line_item_id=${lineItemId} not found on quote_id=${quoteId} (has ${lineItems.length} line item(s)).\n\nDEBUG:\n${JSON.stringify(debug, null, 2)}`
+      `line_item_id=${lineItemId} not found on quote_id=${quoteId} (has ${lineItems.length} line item(s)).`
     );
     return;
   }
