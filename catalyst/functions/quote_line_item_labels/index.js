@@ -67,7 +67,12 @@ module.exports = async (req, res) => {
 
   const productId = item.Product_Name && item.Product_Name.id;
   if (!productId) {
-    send(res, 502, { "Content-Type": "text/plain" }, `Line item ${lineItemId} has no linked product (Product_Name.id missing).`);
+    send(
+      res,
+      502,
+      { "Content-Type": "text/plain" },
+      `Line item ${lineItemId} has no linked product (Product_Name.id missing).\n\nDEBUG item:\n${JSON.stringify(item, null, 2)}`
+    );
     return;
   }
 
