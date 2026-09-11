@@ -126,8 +126,10 @@ function drawLargeLabelContent(doc, data) {
 }
 
 // ---------------------------------------------------------------------
-// Jewellery -- foldable 50x11mm two-panel tag, ported from
-// jewellery_mini_label / diamond_jewellery_parcel_label.
+// Jewellery -- foldable 50x11mm two-panel tag, ported from jewellery_label
+// (the no-price variant) rather than jewellery_mini_label -- per
+// instruction, this function's jewellery labels don't show Style ID or
+// the (obfuscated) price.
 // ---------------------------------------------------------------------
 const JEWELLERY_HALF_WIDTH_MM = 25;
 const JEWELLERY_HEIGHT_MM = 11;
@@ -136,8 +138,8 @@ const JEWELLERY_TOTAL_WIDTH_MM = JEWELLERY_HALF_WIDTH_MM * 2;
 const JEWELLERY_QR = { x: 2.6, y: 1.6, size: 7.4 };
 const JEWELLERY_LEFT_FONT_SIZE = 6.0;
 const JEWELLERY_LEFT_TEXT_X = 12.6;
-const JEWELLERY_LEFT_ROW_Y = [2.4, 4.9, 7.4, 9.9];
-const [JEWELLERY_SKU_Y, JEWELLERY_GROWTH_Y, JEWELLERY_STYLE_ID_Y, JEWELLERY_PRICE_Y] = JEWELLERY_LEFT_ROW_Y;
+const JEWELLERY_SKU_Y = 3.8;
+const JEWELLERY_GROWTH_Y = 6.1;
 
 const JEWELLERY_DETAIL_FONT_SIZE = 4.5;
 const JEWELLERY_LAST_ROW_FONT_SIZE = 4.0;
@@ -159,10 +161,11 @@ function drawJewelleryLabelContent(doc, data) {
   return QRCode.toBuffer(data.sku || " ", { margin: 0, errorCorrectionLevel: "M" }).then((qrPng) => {
     doc.image(qrPng, mm(JEWELLERY_QR.x), mm(JEWELLERY_QR.y), { width: mm(JEWELLERY_QR.size), height: mm(JEWELLERY_QR.size) });
 
+    // No Style ID / price rows here, per instruction -- this is the
+    // no-price jewellery layout (ported from jewellery_label), not the
+    // jewellery_mini_label one.
     if (!isEmpty(data.sku)) drawAt(JEWELLERY_LEFT_TEXT_X, JEWELLERY_SKU_Y, data.sku, JEWELLERY_LEFT_FONT_SIZE);
-    if (!isEmpty(data.growth_type)) drawAt(JEWELLERY_LEFT_TEXT_X, JEWELLERY_GROWTH_Y, data.growth_type, JEWELLERY_LEFT_FONT_SIZE);
-    if (!isEmpty(data.style_id)) drawAt(JEWELLERY_LEFT_TEXT_X, JEWELLERY_STYLE_ID_Y, data.style_id, JEWELLERY_LEFT_FONT_SIZE);
-    if (!isEmpty(data.price)) drawAt(JEWELLERY_LEFT_TEXT_X, JEWELLERY_PRICE_Y, `9${data.price}9`, JEWELLERY_LEFT_FONT_SIZE);
+    if (!isEmpty(data.growth_type)) drawAt(JEWELLERY_LEFT_TEXT_X, JEWELLERY_GROWTH_Y, data.growth_type, JEWELLERY_LEFT_FONT_SIZE, { bold: false });
 
     const line1 = [data.parent_category, data.sub_category].filter((v) => !isEmpty(v)).join(" - ") || null;
     const line2 = [data.diamond_shape, data.metal_type, data.metal_purity].filter((v) => !isEmpty(v)).join(" ") || null;
