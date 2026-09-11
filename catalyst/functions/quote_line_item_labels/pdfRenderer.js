@@ -33,32 +33,32 @@ function drawAtFactory(doc) {
 }
 
 // ---------------------------------------------------------------------
-// Certified diamonds / parcels -- 65x31mm single panel, ported from
-// large_diamond_parcel_label / diamond_jewellery_parcel_label.
+// Certified diamonds / parcels -- 30x19mm mini label, ported from
+// certified_diamond_label (not large_diamond_parcel_label) per
+// instruction. Uniform 4.0pt font, single label/value column on the
+// left, QR + one cert/size line on the right.
 // ---------------------------------------------------------------------
-const LARGE_WIDTH_MM = Number(process.env.LABEL_WIDTH_MM || 65);
-const LARGE_HEIGHT_MM = Number(process.env.LABEL_HEIGHT_MM || 31);
+const LARGE_WIDTH_MM = Number(process.env.LABEL_WIDTH_MM || 30);
+const LARGE_HEIGHT_MM = Number(process.env.LABEL_HEIGHT_MM || 19);
 
-const LARGE_LEFT_X = 4.3;
-const LARGE_VALUE_X = 19.5;
-const LARGE_RIGHT_X = 36.8;
-const LARGE_FONT_SIZE = 6.5;
+const LARGE_LEFT_X = 2.0;
+const LARGE_VALUE_X = 9.0;
+const LARGE_RIGHT_X = 17.0;
+const LARGE_FONT_SIZE = 4.0;
 
-const LARGE_SKU_Y = 5.7;
-const LARGE_GROWTH_Y = 9.3;
-const LARGE_GIA_Y = 22.0;
-const LARGE_QR = { x: LARGE_RIGHT_X, top: 3.6, size: 14.4 };
+const LARGE_SKU_Y = 3.5;
+const LARGE_GROWTH_Y = 5.7;
+const LARGE_GIA_Y = 13.5;
+const LARGE_QR = { x: LARGE_RIGHT_X, top: 2.2, size: 8.8 };
 
-// 7-row bottom anchor (29.0) is lower than the others (26.3) --
-// intentional: the measurements line that used to anchor the right
-// column at 26.3 was removed, freeing up space below it, so the
-// 7-row parcel list (which wraps "No.of Stones Ordered" onto its own
-// two lines) can spread further down instead of shrinking its font.
+// Top anchor (9.0) stays level with the header gap; bottom anchor
+// stretches down towards the border as row count grows -- there's no
+// measurements line competing for space on this layout, so the field
+// list is free to use the whole column down to just above the border.
 const LARGE_FIELD_ROW_Y = {
-  4: [14.7, 18.9, 22.7, 26.3],
-  5: [14.7, 17.6, 20.5, 23.4, 26.3],
-  6: [14.7, 17.0, 19.3, 21.7, 24.0, 26.3],
-  7: [14.7, 17.1, 19.4, 21.8, 24.2, 26.6, 29.0],
+  4: [9.0, 11.6, 13.9, 16.1],
+  5: [9.0, 10.8, 12.6, 14.4, 16.2],
+  6: [9.0, 10.7, 12.4, 14.1, 15.8, 17.5],
 };
 
 const CERTIFIED_FIELD_ROWS = [
@@ -73,11 +73,9 @@ const LARGE_FIELD_ROWS_BY_TYPE = {
   parcel: [
     ...CERTIFIED_FIELD_ROWS,
     ["size", "Size", (d) => (!isEmpty(d.mm_size) ? `${d.mm_size}mm` : null)],
-    // "No.of Stones Ordered" wraps across two rows instead of squeezing
-    // onto one -- the label reads "No.of Stones" / "Ordered", with the
-    // value beside the second line.
-    ["stones_ordered_label", "No.of Stones", () => null],
-    ["stones_ordered_value", "Ordered", (d) => (!isEmpty(d.stones_ordered) ? String(d.stones_ordered) : null)],
+    // Abbreviated (vs. the large label's "No.of Stones Ordered") -- this
+    // label/value column is only 7mm wide on the mini layout.
+    ["stones_ordered", "St Ord", (d) => (!isEmpty(d.stones_ordered) ? String(d.stones_ordered) : null)],
   ],
 };
 
@@ -110,15 +108,11 @@ function drawLargeLabelContent(doc, data) {
       if (!isEmpty(value)) drawAt(LARGE_VALUE_X, y, String(value), LARGE_FONT_SIZE);
     });
 
+    // Certified only: lab + certificate number. Parcel already shows its
+    // size in the field list above (as the "Size" row) -- repeating it
+    // here too was the "size showing twice" bug.
     const lab = data.certificate_lab || "GIA";
-    const giaLine =
-      data.label_type === "certified"
-        ? !isEmpty(data.certificate_no)
-          ? `${lab}-${data.certificate_no}`
-          : null
-        : !isEmpty(data.mm_size)
-          ? `Size ${data.mm_size}mm`
-          : null;
+    const giaLine = data.label_type === "certified" && !isEmpty(data.certificate_no) ? `${lab}-${data.certificate_no}` : null;
     const rightColumnMaxWidthMm = LARGE_WIDTH_MM - LARGE_RIGHT_X - 1.5;
 
     if (giaLine) drawAt(LARGE_RIGHT_X, LARGE_GIA_Y, giaLine, LARGE_FONT_SIZE, { maxWidthMm: rightColumnMaxWidthMm });
