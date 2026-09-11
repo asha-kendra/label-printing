@@ -112,7 +112,7 @@ function drawLargeLabelContent(doc, data) {
         ? [!isEmpty(data.certificate_no) ? `${lab}-${data.certificate_no}` : null]
         : [
             !isEmpty(data.mm_size) ? `Size ${data.mm_size}mm` : null,
-            !isEmpty(data.stones_ordered) ? `St Ord: ${data.stones_ordered}` : null,
+            !isEmpty(data.stones_ordered) ? `No.of Stones Ordered: ${data.stones_ordered}` : null,
           ];
     const rightColumnMaxWidthMm = LARGE_WIDTH_MM - LARGE_RIGHT_X - 1.5;
 
