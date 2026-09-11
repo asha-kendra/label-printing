@@ -100,6 +100,9 @@ module.exports = async (req, res) => {
   // quote can differ from the product record's own weight_ct (e.g. a
   // partial quantity out of a parcel), per instruction.
   if (!isEmpty(item.Quantity)) data.weight_ct = item.Quantity;
+  // Jewellery labels show this line item's own Quantity too (as "Qty:
+  // N"), separately from weight_ct since jewellery has no such field.
+  if (!isEmpty(item.Quantity)) data.quantity = item.Quantity;
   // Parcel's extra "No.of Stones Ordered" field -- also a line item
   // field (No_Of_Stones_Ordered), not on the product record.
   if (!isEmpty(item.No_Of_Stones_Ordered)) data.stones_ordered = item.No_Of_Stones_Ordered;

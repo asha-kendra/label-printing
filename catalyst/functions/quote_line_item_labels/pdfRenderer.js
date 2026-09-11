@@ -177,6 +177,7 @@ function drawJewelleryLabelContent(doc, data) {
       [
         !isEmpty(data.metal_weight) ? `${data.metal_weight} gms` : null,
         !isEmpty(data.ring_size) ? `Size: ${data.ring_size}` : null,
+        !isEmpty(data.quantity) ? `Qty: ${data.quantity}` : null,
       ]
         .filter(Boolean)
         .join("  ") || null;
