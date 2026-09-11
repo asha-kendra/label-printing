@@ -58,7 +58,11 @@ module.exports = async (req, res) => {
   // (see zohoCrmClient.js).
   const usingCustomSubform = Array.isArray(quote.Quoted_Items);
   const lineItems = usingCustomSubform ? quote.Quoted_Items : Array.isArray(quote.Product_Details) ? quote.Product_Details : [];
-  const item = lineItems.find((li) => String(li.id) === String(lineItemId));
+  // line_item_id is normally the subform row's own record id, but the
+  // CRM Client Script that builds this URL from the Quotes page can
+  // only see Sequence_Number (a per-row counter, e.g. "1", "2") -- the
+  // row's real id isn't exposed by that SDK at all. Accept either.
+  const item = lineItems.find((li) => String(li.id) === String(lineItemId) || String(li.Sequence_Number) === String(lineItemId));
   if (!item) {
     send(
       res,
