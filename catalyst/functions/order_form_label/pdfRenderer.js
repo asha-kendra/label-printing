@@ -25,7 +25,10 @@ const TEXT_MAX_WIDTH_MM = 35.5; // leaves room for the logo/QR column on the rig
 const HEADER_FONT_SIZE = 3.6;
 const BODY_FONT_SIZE = 3.0;
 const HEADER_Y = 1.4;
-const ROW_Y = [2.8, 4.2, 5.6, 7.1, 8.6, 10.1];
+// 7 rows now (added "Order number:") -- spacing tightened slightly
+// (~1.3mm vs ~1.45mm) to fit the extra row within the label's 11mm
+// height without shrinking BODY_FONT_SIZE.
+const ROW_Y = [2.8, 4.1, 5.4, 6.7, 8.0, 9.3, 10.6];
 
 const LOGO = { x: 37.9, y: 0.5, width: 5.1, height: 3.0 };
 const QR = { x: 37.4, y: 3.6, size: 6.4 };
@@ -104,6 +107,7 @@ async function renderOrderFormLabelPdf(data, printedAt) {
   const printedLine = `Label Printed: ${formatDateTime(printedAt)}`;
 
   const bodyLines = [
+    !isEmpty(data.client_id) ? `Order number: ${data.client_id}` : null,
     !isEmpty(data.client_id) ? `Client ID: ${data.client_id}` : null,
     !isEmpty(data.client_name) ? `Client: ${data.client_name}` : null,
     !isEmpty(data.sales_rep) ? `Sales: ${data.sales_rep}` : null,
