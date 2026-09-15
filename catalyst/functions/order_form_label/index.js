@@ -14,7 +14,7 @@
 
 const { buildLabelDataFromQuote, buildLabelDataFromSalesOrder } = require("./labelData");
 const { getQuote } = require("./zohoCrmClient");
-const { getSalesOrder } = require("./zohoInventoryClient");
+const { getSalesOrder, findSalesOrderByReferenceNumber } = require("./zohoInventoryClient");
 const { renderOrderFormLabelPdf } = require("./pdfRenderer");
 
 function send(res, status, headers, body) {
@@ -54,14 +54,15 @@ module.exports = async (req, res) => {
     } else {
       const quote = await getQuote(quoteId);
       data = buildLabelDataFromQuote(quote);
-      // Fetch the real Appro number straight from the Quote's own
-      // Inventory_Appro_ID field (Zoho Inventory record id) -- best
-      // effort: a missing field or failed Inventory lookup just leaves
-      // appro_no blank rather than failing the whole label.
+      // Fetch the real Appro number by searching Zoho Inventory for the
+      // Sales Order whose reference_number matches the Quote's own
+      // Inventory_Appro_ID (a reference number, not a record id, per
+      // instruction). Best effort: a missing field or failed lookup
+      // just leaves appro_no blank rather than failing the whole label.
       try {
         if (quote.Inventory_Appro_ID) {
-          const inventorySalesOrder = await getSalesOrder(quote.Inventory_Appro_ID);
-          data.appro_no = inventorySalesOrder.salesorder_number || null;
+          const inventorySalesOrder = await findSalesOrderByReferenceNumber(quote.Inventory_Appro_ID);
+          if (inventorySalesOrder) data.appro_no = inventorySalesOrder.salesorder_number || null;
         }
       } catch (lookupErr) {
         // swallow -- Appro number is a nice-to-have, not worth failing the whole label for

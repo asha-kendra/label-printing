@@ -24,14 +24,10 @@ async function getSalesOrder(salesOrderId) {
   return json.salesorder;
 }
 
-// For every "Appro" order form in CRM Quotes, a matching Sales Order is
-// created in Inventory (per instruction) -- this looks that Sales Order
-// up by reference_number, using the CRM Quote's own number as the
-// search key, and returns its (confirmed real, standard) salesorder_number
-// for display. UNVERIFIED: whether reference_number is actually where
-// the Quote number gets stored on the Sales Order side hasn't been
-// confirmed against a real linked pair -- test with a real quote_id and
-// adjust the search key here if it comes back empty.
+// The Quote's own Inventory_Appro_ID field is a reference number (e.g.
+// "00169"), not a Zoho Inventory record id, per instruction -- so the
+// matching Sales Order has to be found by searching Inventory's
+// reference_number rather than fetched directly by id.
 async function findSalesOrderByReferenceNumber(referenceNumber) {
   if (!referenceNumber) return null;
   const token = await getAccessToken();
