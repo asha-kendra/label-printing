@@ -13,18 +13,13 @@
 //     count field was found on the record, so this is a best-effort
 //     stand-in, not a confirmed field.
 // The number shown next to the order type (e.g. "APPRO | SO-00234") is
-// NOT a field on the Quote at all -- confirmed live, it takes two more
-// hops: the Quote's matching Appro record (CRM Sales_Orders module,
-// labelled "Appros" in the UI, linked via its Quote_Name lookup field)
-// carries an Inventory_id field, and THAT id is what fetches the real
-// Zoho Inventory Sales Order whose salesorder_number belongs here (the
-// Appro's own SO_Number field is a different, non-human-readable
-// internal reference -- not what gets displayed). Since this needs two
-// live lookups, appro_no is left null in this function -- index.js
-// fills it in (see zohoCrmClient.js's findApproByQuoteId and
-// zohoInventoryClient.js's getSalesOrder). "Label Printed" is not a
-// CRM field at all -- it's stamped with the current time at render
-// time, in pdfRenderer.js.
+// NOT a field on the Quote at all -- it comes from searching Zoho
+// Inventory for the Sales Order whose reference_number matches the
+// Quote's own Inventory_Appro_ID field, so appro_no is left null here;
+// index.js fills it in (see zohoInventoryClient.js's
+// findSalesOrderByReferenceNumber). "Label Printed" is not a CRM field
+// at all -- it's stamped with the current time at render time, in
+// pdfRenderer.js.
 function isEmpty(v) {
   return v === null || v === undefined || v === "";
 }
@@ -46,32 +41,4 @@ function buildLabelDataFromQuote(quote) {
   };
 }
 
-// Confirmed live against Zoho Inventory's Sales Order custom-field
-// metadata (bulk_fetch_fields, entity=salesorder, org 20108921672):
-// cf_sales_type is real, with values including "APPRO" -- this is the
-// Inventory-side equivalent of the CRM Quote's Order_Type. No custom
-// field matching "Client ID" / "Dispatch Queue" (as a number) was found
-// among Sales Order custom fields -- the closest is cf_dispatch_status,
-// which is a status dropdown (Draft/Submitted/Shipped/...), not the
-// same thing, so client_id stays unconfirmed (null) for this path.
-// salesorder_number itself is the real, standard field for "Appro
-// number" -- when fetching a Sales Order directly (not via a linked
-// CRM Quote), its own number goes in the Appro slot, and
-// reference_number (falling back to salesorder_number) is used for
-// "Order:" since that's expected to hold the originating Quote number.
-function buildLabelDataFromSalesOrder(salesOrder) {
-  const itemCount = Array.isArray(salesOrder.line_items) ? salesOrder.line_items.length : null;
-
-  return {
-    order_no: salesOrder.reference_number || salesOrder.salesorder_number || null,
-    appro_no: salesOrder.salesorder_number || null,
-    client_id: null, // unconfirmed -- no matching Sales Order field found yet
-    client_name: salesOrder.customer_name || null,
-    sales_rep: salesOrder.salesperson_name || null,
-    order_type: salesOrder.cf_sales_type || null,
-    submitted_at: salesOrder.date || salesOrder.created_time || null,
-    item_count: isEmpty(itemCount) ? null : itemCount,
-  };
-}
-
-module.exports = { isEmpty, buildLabelDataFromQuote, buildLabelDataFromSalesOrder };
+module.exports = { isEmpty, buildLabelDataFromQuote };
