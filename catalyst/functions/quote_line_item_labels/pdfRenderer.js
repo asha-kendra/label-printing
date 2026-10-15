@@ -73,6 +73,20 @@ const LARGE_FIELD_ROWS_BY_TYPE = {
   parcel: CERTIFIED_FIELD_ROWS,
 };
 
+// Ported from certified_diamond_label -- measurements were dropped
+// project-wide earlier, but certified's own reference layout always
+// showed them under the cert number, so they're restored here for
+// certified only.
+function measurementsLine(data) {
+  if (!isEmpty(data.measurements_mm)) {
+    return `${String(data.measurements_mm).replace(/x/g, "×")}mm`;
+  }
+  const dims = [data.length_mm, data.width_mm].filter((v) => !isEmpty(v)).join("-");
+  let combined = dims;
+  if (!isEmpty(data.depth_mm)) combined = dims ? `${dims}×${data.depth_mm}` : String(data.depth_mm);
+  return combined ? `${combined}mm` : null;
+}
+
 // Draws onto whatever the doc's CURRENT page is -- caller is
 // responsible for creating/sizing that page first.
 function drawLargeLabelContent(doc, data) {
@@ -102,14 +116,14 @@ function drawLargeLabelContent(doc, data) {
       if (!isEmpty(value)) drawAt(LARGE_VALUE_X, y, String(value), LARGE_FONT_SIZE);
     });
 
-    // Under the QR: certified shows lab + certificate number; parcel
-    // shows size then stones ordered instead (kept off the left field
-    // list so it isn't crowded, and out of each other's way so size
-    // never repeats).
+    // Under the QR: certified shows lab + certificate number, then
+    // measurements; parcel shows size then stones ordered instead (kept
+    // off the left field list so it isn't crowded, and out of each
+    // other's way so size never repeats).
     const lab = data.certificate_lab || "GIA";
     const rightLines =
       data.label_type === "certified"
-        ? [!isEmpty(data.certificate_no) ? `${lab}-${data.certificate_no}` : null]
+        ? [!isEmpty(data.certificate_no) ? `${lab}-${data.certificate_no}` : null, measurementsLine(data)]
         : [
             !isEmpty(data.mm_size) ? `Size ${data.mm_size}mm` : null,
             !isEmpty(data.stones_ordered) ? `No.of Stones Ordered: ${data.stones_ordered}` : null,
