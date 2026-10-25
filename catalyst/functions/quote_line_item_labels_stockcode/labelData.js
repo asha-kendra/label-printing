@@ -62,7 +62,7 @@ function buildLabelDataFromCrmProduct(product, labelTypeOverride) {
 
   return {
     label_type: labelType,
-    sku: product.Stock_Code_Number || null,
+    sku: !isEmpty(product.Stock_Code_Number) ? `AC${product.Stock_Code_Number}` : null,
     growth_type: product.ProductType || null,
 
     // certified / parcel (large_diamond_parcel_label)
